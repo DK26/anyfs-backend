@@ -25,13 +25,13 @@
 
 // Private modules
 mod error;
+mod traits;
 mod types;
 
 // TODO: Add these modules as they are implemented
 // mod layer;
 // mod ext;
 // mod markers;
-// mod traits;
 
 // Public re-exports - error types
 pub use error::FsError;
@@ -40,3 +40,6 @@ pub use error::FsError;
 pub use types::{
     DirEntry, FileType, Handle, LockType, Metadata, OpenFlags, Permissions, ROOT_INODE, StatFs,
 };
+
+// Public re-exports - Layer 1 core traits
+pub use traits::{Fs, FsDir, FsRead, FsWrite, ReadDirIter};
