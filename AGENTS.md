@@ -22,18 +22,60 @@ This crate has **minimal dependencies** (`thiserror` required; `serde` optional)
 
 ---
 
+## ⚠️ CRITICAL: Verify Against Design Manual
+
+**Before implementing any trait, type, or API, ALWAYS verify against the design manual.**
+
+### Verification Checklist
+
+Before writing code, check the design manual for:
+
+1. **Method signatures** - Exact parameter names, types, and return types
+2. **Trait bounds** - Required supertraits (`Send + Sync`, etc.)
+3. **Error variants** - Which `FsError` variants to return for each case
+4. **Type definitions** - Field names, derives, and attributes
+5. **Boxing strategy** - Which methods return `Box<dyn ...>` vs concrete types
+
+### Key Design Manual Pages
+
+| Topic           | URL                                                                            |
+| --------------- | ------------------------------------------------------------------------------ |
+| Design Overview | <https://dk26.github.io/anyfs-design-manual/architecture/design-overview.html> |
+| Layered Traits  | <https://dk26.github.io/anyfs-design-manual/traits/layered-traits.html>        |
+| ADRs            | <https://dk26.github.io/anyfs-design-manual/architecture/adrs.html>            |
+
+### Why This Matters
+
+- Trait signatures are **public API contracts** - changes are breaking
+- The design manual is the **single source of truth**
+- Early mistakes in trait design are **expensive to fix** later
+- Tests should verify **design compliance**, not just functionality
+
+### Workflow
+
+```
+1. Read the GitHub issue
+2. Read the corresponding design manual section
+3. Compare issue with design manual (design manual wins if conflict)
+4. Write tests that match the design manual's API
+5. Implement to pass tests
+6. Verify final code matches design manual exactly
+```
+
+---
+
 ## Development Methodology: TDD (Test-Driven Development)
 
 **We follow strict TDD: write tests first, then implement until green.**
 
 ### Tests Are Tasks
 
-| Concept | Meaning |
-|---------|---------|
-| A failing test | A task to complete |
-| A passing test | A completed task |
+| Concept         | Meaning                |
+| --------------- | ---------------------- |
+| A failing test  | A task to complete     |
+| A passing test  | A completed task       |
 | All tests green | Feature/issue complete |
-| Test count | Progress metric |
+| Test count      | Progress metric        |
 
 Each test represents a specific requirement or behavior. When you write a test, you define a task. When the test passes, you have completed that task.
 
@@ -87,13 +129,13 @@ Follow the GitHub issues in dependency order:
 
 Each trait/type needs tests for:
 
-| Category | What to Test |
-|----------|--------------|
-| **Type Tests** | Correct fields, derives, Send+Sync |
-| **Error Tests** | All error variants, Display impl, From conversions |
-| **Object Safety** | `dyn Trait` compiles and works |
-| **Trait Bounds** | Supertraits are enforced |
-| **Send+Sync** | Thread safety (compile-time check) |
+| Category          | What to Test                                       |
+| ----------------- | -------------------------------------------------- |
+| **Type Tests**    | Correct fields, derives, Send+Sync                 |
+| **Error Tests**   | All error variants, Display impl, From conversions |
+| **Object Safety** | `dyn Trait` compiles and works                     |
+| **Trait Bounds**  | Supertraits are enforced                           |
+| **Send+Sync**     | Thread safety (compile-time check)                 |
 
 ---
 
@@ -123,11 +165,11 @@ This means:
 
 ## Boxing Strategy (ADR-025)
 
-| Path | Strategy |
-|------|----------|
-| Hot path (`read`, `write`, `metadata`) | Concrete types, generics |
-| Cold path (`open_read`, `open_write`, `read_dir`) | `Box<dyn Read>`, etc. |
-| Opt-in type erasure | `FileStorage::boxed()` |
+| Path                                              | Strategy                 |
+| ------------------------------------------------- | ------------------------ |
+| Hot path (`read`, `write`, `metadata`)            | Concrete types, generics |
+| Cold path (`open_read`, `open_write`, `read_dir`) | `Box<dyn Read>`, etc.    |
+| Opt-in type erasure                               | `FileStorage::boxed()`   |
 
 **Do NOT** add boxing to hot path methods.
 
@@ -135,10 +177,10 @@ This means:
 
 ## When in Doubt
 
-| Question | Answer |
-|----------|--------|
-| What goes in this crate? | Only traits and types, no implementations |
-| Where are backends? | `anyfs` crate (not this one) |
-| Should I add a dependency? | Probably not. Ask first. |
-| Async support? | Sync only for now. Async-ready design. |
-| How to test trait? | Mock struct in tests that implements it |
+| Question                   | Answer                                    |
+| -------------------------- | ----------------------------------------- |
+| What goes in this crate?   | Only traits and types, no implementations |
+| Where are backends?        | `anyfs` crate (not this one)              |
+| Should I add a dependency? | Probably not. Ask first.                  |
+| Async support?             | Sync only for now. Async-ready design.    |
+| How to test trait?         | Mock struct in tests that implements it   |
