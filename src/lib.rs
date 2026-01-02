@@ -43,3 +43,6 @@ pub use types::{
 
 // Public re-exports - Layer 1 core traits
 pub use traits::{Fs, FsDir, FsRead, FsWrite, ReadDirIter};
+
+// Public re-exports - Layer 2 extended traits
+pub use traits::{FsFull, FsLink, FsPermissions, FsStats, FsSync};
