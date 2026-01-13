@@ -12,13 +12,18 @@
 //!
 //! ## Usage
 //!
-//! ```rust,ignore
+//! ```rust
 //! use anyfs_backend::{FsPath, FsRead, FsLink};
 //! use std::path::Path;
 //!
-//! fn resolve_path<B: FsPath>(backend: &B, path: &Path) {
-//!     let canonical = backend.canonicalize(path).unwrap();
-//!     println!("Resolved: {}", canonical.display());
+//! // Generic function that works with any FsPath implementation
+//! fn resolve<B: FsPath>(backend: &B) -> Result<(), anyfs_backend::FsError> {
+//!     // Resolve symlinks and normalize path
+//!     let path = backend.canonicalize(Path::new("/some/path/../file.txt"))?;
+//!     
+//!     // Resolve parent, allow non-existent final component
+//!     let new_path = backend.soft_canonicalize(Path::new("/dir/new_file.txt"))?;
+//!     Ok(())
 //! }
 //! ```
 
@@ -56,10 +61,11 @@ const MAX_SYMLINK_DEPTH: usize = 40;
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{FsPath, FsRead, FsLink};
 /// use std::path::Path;
 ///
+/// // Generic function that works with any FsPath implementation
 /// fn resolve<B: FsPath>(backend: &B) -> Result<(), anyfs_backend::FsError> {
 ///     // Resolve symlinks and normalize path
 ///     let path = backend.canonicalize(Path::new("/some/path/../file.txt"))?;
@@ -90,10 +96,17 @@ pub trait FsPath: FsRead + FsLink {
     ///
     /// # Example
     ///
-    /// ```rust,ignore
-    /// // Given: /link -> /target, /target/file.txt exists
-    /// let path = backend.canonicalize(Path::new("/link/file.txt"))?;
-    /// assert_eq!(path, PathBuf::from("/target/file.txt"));
+    /// ```rust
+    /// use anyfs_backend::FsPath;
+    /// use std::path::{Path, PathBuf};
+    ///
+    /// // Generic function that demonstrates canonicalize
+    /// fn resolve_link<B: FsPath>(backend: &B) -> Result<PathBuf, anyfs_backend::FsError> {
+    ///     // Given: /link -> /target, /target/file.txt exists
+    ///     let path = backend.canonicalize(Path::new("/link/file.txt"))?;
+    ///     // Result: PathBuf::from("/target/file.txt")
+    ///     Ok(path)
+    /// }
     /// ```
     fn canonicalize(&self, path: &Path) -> Result<PathBuf, FsError> {
         default_canonicalize(self, path)
@@ -120,10 +133,17 @@ pub trait FsPath: FsRead + FsLink {
     ///
     /// # Example
     ///
-    /// ```rust,ignore
-    /// // Given: /dir exists, /dir/new_file.txt does NOT exist
-    /// let path = backend.soft_canonicalize(Path::new("/dir/new_file.txt"))?;
-    /// assert_eq!(path, PathBuf::from("/dir/new_file.txt"));
+    /// ```rust
+    /// use anyfs_backend::FsPath;
+    /// use std::path::{Path, PathBuf};
+    ///
+    /// // Generic function that demonstrates soft_canonicalize
+    /// fn resolve_new_file<B: FsPath>(backend: &B) -> Result<PathBuf, anyfs_backend::FsError> {
+    ///     // Given: /dir exists, /dir/new_file.txt does NOT exist
+    ///     let path = backend.soft_canonicalize(Path::new("/dir/new_file.txt"))?;
+    ///     // Result: PathBuf::from("/dir/new_file.txt")
+    ///     Ok(path)
+    /// }
     /// ```
     fn soft_canonicalize(&self, path: &Path) -> Result<PathBuf, FsError> {
         default_soft_canonicalize(self, path)

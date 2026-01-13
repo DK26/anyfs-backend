@@ -11,11 +11,12 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```rust
 //! use anyfs_backend::{FsInode, FsError, Metadata};
 //! use std::path::Path;
 //! use std::ffi::OsStr;
 //!
+//! // Generic function that works with any FsInode implementation
 //! fn get_child_metadata<B: FsInode>(
 //!     backend: &B,
 //!     parent: u64,
@@ -49,7 +50,7 @@ use crate::{FsError, Metadata};
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{FsInode, FsError, Metadata, ROOT_INODE};
 /// use std::path::{Path, PathBuf};
 /// use std::ffi::OsStr;
@@ -63,7 +64,7 @@ use crate::{FsError, Metadata};
 ///             Ok(ROOT_INODE)
 ///         } else {
 ///             // ... lookup in inode table
-///             # Ok(2)
+///             Ok(2)
 ///         }
 ///     }
 ///
@@ -73,18 +74,18 @@ use crate::{FsError, Metadata};
 ///             Ok(PathBuf::from("/"))
 ///         } else {
 ///             // ... lookup in path table
-///             # Ok(PathBuf::from("/file.txt"))
+///             Ok(PathBuf::from("/file.txt"))
 ///         }
 ///     }
 ///
-///     fn lookup(&self, parent_inode: u64, name: &OsStr) -> Result<u64, FsError> {
+///     fn lookup(&self, _parent_inode: u64, _name: &OsStr) -> Result<u64, FsError> {
 ///         // Find child inode by name within parent directory
-///         # Ok(2)
+///         Ok(2)
 ///     }
 ///
-///     fn metadata_by_inode(&self, inode: u64) -> Result<Metadata, FsError> {
+///     fn metadata_by_inode(&self, _inode: u64) -> Result<Metadata, FsError> {
 ///         // Get metadata directly by inode
-///         # unimplemented!()
+///         Ok(Metadata::default())
 ///     }
 /// }
 /// ```

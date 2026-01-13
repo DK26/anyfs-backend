@@ -15,10 +15,11 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```rust
 //! use anyfs_backend::{FsHandles, OpenFlags, FsError};
 //! use std::path::Path;
 //!
+//! // Generic function that works with any FsHandles implementation
 //! fn copy_via_handles<B: FsHandles>(
 //!     backend: &B,
 //!     src: &Path,
@@ -69,10 +70,11 @@ use crate::{FsError, Handle, OpenFlags};
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{FsHandles, OpenFlags, FsError, Handle};
 /// use std::path::Path;
 ///
+/// // Generic function that works with any FsHandles implementation
 /// fn read_header<B: FsHandles>(backend: &B, path: &Path) -> Result<[u8; 16], FsError> {
 ///     let handle = backend.open(path, OpenFlags::READ)?;
 ///     let mut header = [0u8; 16];

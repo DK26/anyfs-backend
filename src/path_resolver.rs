@@ -11,21 +11,21 @@
 //!
 //! ## Usage
 //!
-//! ```rust,ignore
+//! ```rust
 //! use anyfs_backend::{PathResolver, Fs, FsError};
 //! use std::path::{Path, PathBuf};
 //!
 //! struct MyCustomResolver;
 //!
 //! impl PathResolver for MyCustomResolver {
-//!     fn canonicalize(&self, path: &Path, fs: &dyn Fs) -> Result<PathBuf, FsError> {
+//!     fn canonicalize(&self, path: &Path, _fs: &dyn Fs) -> Result<PathBuf, FsError> {
 //!         // Custom resolution logic
-//!         todo!()
+//!         Ok(path.to_path_buf())
 //!     }
 //!     
-//!     fn soft_canonicalize(&self, path: &Path, fs: &dyn Fs) -> Result<PathBuf, FsError> {
+//!     fn soft_canonicalize(&self, path: &Path, _fs: &dyn Fs) -> Result<PathBuf, FsError> {
 //!         // Custom resolution logic (allows non-existent final component)
-//!         todo!()
+//!         Ok(path.to_path_buf())
 //!     }
 //! }
 //! ```
@@ -67,21 +67,21 @@ use crate::{Fs, FsError};
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{PathResolver, Fs, FsError};
 /// use std::path::{Path, PathBuf};
 ///
 /// struct MyCustomResolver;
 ///
 /// impl PathResolver for MyCustomResolver {
-///     fn canonicalize(&self, path: &Path, fs: &dyn Fs) -> Result<PathBuf, FsError> {
+///     fn canonicalize(&self, path: &Path, _fs: &dyn Fs) -> Result<PathBuf, FsError> {
 ///         // Custom resolution logic
-///         todo!()
+///         Ok(path.to_path_buf())
 ///     }
 ///     
-///     fn soft_canonicalize(&self, path: &Path, fs: &dyn Fs) -> Result<PathBuf, FsError> {
+///     fn soft_canonicalize(&self, path: &Path, _fs: &dyn Fs) -> Result<PathBuf, FsError> {
 ///         // Custom resolution logic (allows non-existent final component)
-///         todo!()
+///         Ok(path.to_path_buf())
 ///     }
 /// }
 /// ```

@@ -16,10 +16,11 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```rust
 //! use anyfs_backend::{FsXattr, FsError};
 //! use std::path::Path;
 //!
+//! // Generic function that works with any FsXattr implementation
 //! fn tag_file<B: FsXattr>(backend: &B, path: &Path, tag: &str) -> Result<(), FsError> {
 //!     backend.set_xattr(path, "user.tag", tag.as_bytes())?;
 //!     
@@ -53,10 +54,11 @@ use crate::FsError;
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{FsXattr, FsError};
 /// use std::path::Path;
 ///
+/// // Generic function that works with any FsXattr implementation
 /// fn get_user_tag<B: FsXattr>(backend: &B, path: &Path) -> Result<String, FsError> {
 ///     let value = backend.get_xattr(path, "user.tag")?;
 ///     Ok(String::from_utf8_lossy(&value).into_owned())

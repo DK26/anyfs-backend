@@ -71,10 +71,11 @@ pub trait FsDir: Send + Sync {
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{Fs, FsError};
 /// use std::path::Path;
 ///
+/// // Generic function that works with any Fs implementation
 /// fn list_files<B: Fs>(backend: &B) -> Result<Vec<String>, FsError> {
 ///     let mut names = Vec::new();
 ///     for entry in backend.read_dir(Path::new("/"))? {

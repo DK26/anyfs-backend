@@ -1,21 +1,102 @@
-//! Error types for the AnyFS filesystem abstraction.
+//! # Error Types
+//!
+//! Comprehensive error handling for AnyFS filesystem operations.
+//!
+//! ## Overview
+//!
+//! All AnyFS operations return `Result<T, FsError>`. The [`FsError`] enum provides
+//! detailed, contextual error variants that include:
+//!
+//! - **Path information** — Which file/directory caused the error
+//! - **Operation context** — What operation was attempted
+//! - **Specific details** — Quota limits, invalid data descriptions, etc.
+//!
+//! ## Error Categories
+//!
+//! | Category | Variants | Description |
+//! |----------|----------|-------------|
+//! | Path/File | `NotFound`, `AlreadyExists`, `NotAFile`, `NotADirectory` | Path existence and type errors |
+//! | Permission | `PermissionDenied`, `AccessDenied`, `ReadOnly` | Access control errors |
+//! | Resource | `QuotaExceeded`, `FileSizeExceeded`, `RateLimitExceeded` | Limit violations |
+//! | Data | `InvalidData`, `CorruptedData`, `IntegrityError` | Content problems |
+//! | Operation | `NotSupported`, `Conflict`, `Backend` | Backend/operation failures |
+//!
+//! ## Quick Example
+//!
+//! ```rust
+//! use anyfs_backend::FsError;
+//! use std::path::PathBuf;
+//!
+//! // Errors include the path that caused the problem
+//! let err = FsError::NotFound { path: PathBuf::from("/missing.txt") };
+//! assert!(err.to_string().contains("/missing.txt"));
+//!
+//! // Permission errors include the operation
+//! let err = FsError::PermissionDenied {
+//!     path: PathBuf::from("/secret"),
+//!     operation: "read",
+//! };
+//! assert!(err.to_string().contains("read"));
+//! ```
+//!
+//! ## Conversion from std::io::Error
+//!
+//! [`FsError`] implements `From<std::io::Error>` for easy interoperability:
+//!
+//! ```rust
+//! use anyfs_backend::FsError;
+//! use std::io::{Error, ErrorKind};
+//!
+//! let io_err = Error::new(ErrorKind::NotFound, "file not found");
+//! let fs_err: FsError = io_err.into();
+//! assert!(matches!(fs_err, FsError::NotFound { .. }));
+//! ```
 
 use std::path::PathBuf;
 
-/// Filesystem error type with comprehensive, contextual variants.
+/// Comprehensive filesystem error type.
 ///
-/// All error variants include relevant context (path, operation) where applicable.
-/// Uses `#[non_exhaustive]` for forward compatibility.
+/// All AnyFS operations return `Result<T, FsError>`. Each variant includes
+/// relevant context (paths, operations, limits) to make debugging easier.
 ///
-/// # Examples
+/// # Non-Exhaustive
+///
+/// This enum is marked `#[non_exhaustive]`, meaning new variants may be added
+/// in future versions without breaking changes. Always include a wildcard arm
+/// when pattern matching:
 ///
 /// ```rust
 /// use anyfs_backend::FsError;
 /// use std::path::PathBuf;
 ///
-/// let err = FsError::NotFound { path: PathBuf::from("/missing") };
-/// assert!(err.to_string().contains("/missing"));
+/// fn handle_error(err: FsError) {
+///     match err {
+///         FsError::NotFound { path } => println!("Not found: {}", path.display()),
+///         FsError::PermissionDenied { path, operation } => {
+///             println!("Permission denied for {} on {}", operation, path.display())
+///         }
+///         other => println!("Other error: {}", other),
+///     }
+/// }
 /// ```
+///
+/// # Display Format
+///
+/// All variants implement `Display` with human-readable messages:
+///
+/// ```rust
+/// use anyfs_backend::FsError;
+/// use std::path::PathBuf;
+///
+/// let err = FsError::QuotaExceeded { limit: 100, requested: 50, usage: 80 };
+/// let msg = err.to_string();
+/// assert!(msg.contains("100") && msg.contains("50") && msg.contains("80"));
+/// ```
+///
+/// # Error Source Chain
+///
+/// The [`Io`](FsError::Io) variant wraps `std::io::Error` with the `#[source]`
+/// attribute, enabling error chain traversal via `std::error::Error::source()`.
 #[non_exhaustive]
 #[derive(Debug, thiserror::Error)]
 pub enum FsError {

@@ -139,6 +139,98 @@ Each trait/type needs tests for:
 
 ---
 
+## ⛔ MANDATORY: All Tests and Doc Examples Must Compile and Run
+
+**Every single test and doc example MUST compile and execute. No exceptions. No workarounds.**
+
+### Absolutely Forbidden
+
+| Forbidden                      | Why                                                        |
+| ------------------------------ | ---------------------------------------------------------- |
+| `#[ignore]`                    | Skips test execution                                       |
+| `#[cfg(skip)]` or similar      | Conditionally disables tests                               |
+| `skip` in any form             | Tests exist to run, not to be skipped                      |
+| ` ```rust,ignore `             | Skips compilation entirely — NEVER use this                |
+| ` ```no_run `                  | Code compiles but doesn't run — not allowed                |
+| ` ```ignore `                  | Completely skips the code block                            |
+| ` ```text ` for code examples  | Using text to avoid compilation — code must compile        |
+| `compile_fail` without purpose | Only use when testing that code correctly fails to compile |
+| Commenting out test code       | Dead code that pretends to be a test                       |
+| Empty test functions           | A test must assert something                               |
+| `todo!()` / `unimplemented!()` | Tests must be complete                                     |
+
+### Allowed Uses
+
+| Allowed                             | Why                                                  |
+| ----------------------------------- | ---------------------------------------------------- |
+| ` ```rust ` (default)               | Code compiles and runs — required for examples       |
+| ` ```compile_fail `                 | Testing that invalid code fails to compile           |
+| ` ```text ` for ASCII diagrams ONLY | Diagrams are not code — e.g., trait hierarchy arrows |
+
+**Note:** ` ```text ` is ONLY acceptable for non-code content like ASCII art diagrams.
+If it looks like Rust code, it MUST be ` ```rust ` and MUST compile.
+
+### Writing Runnable Doc Examples for Trait-Only Crates
+
+This crate defines **traits only**, with no concrete implementations. Doc examples must
+still compile and run. Use inline mock implementations:
+
+```rust
+/// ```rust
+/// use anyfs_backend::{FsRead, FsError, Metadata};
+/// use std::path::Path;
+/// use std::io::Read;
+/// 
+/// // Create a minimal mock that implements the trait
+/// struct MockFs;
+/// 
+/// impl FsRead for MockFs {
+///     fn read(&self, path: &Path) -> Result<Vec<u8>, FsError> {
+///         Ok(vec![1, 2, 3])
+///     }
+///     // ... implement other required methods
+/// }
+/// 
+/// // Now use the mock in your example
+/// let fs = MockFs;
+/// let data = fs.read(Path::new("/test.txt")).unwrap();
+/// assert_eq!(data, vec![1, 2, 3]);
+/// ```
+```
+
+### Why This Is Non-Negotiable
+
+1. **Tests are the specification** - A skipped test is a missing spec
+2. **TDD requires running tests** - Can't be RED→GREEN if tests don't run
+3. **CI will catch you** - All tests run in CI, no hiding
+4. **Trust** - If you skip tests, how do we know the code works?
+5. **Doc examples ARE tests** - They prove the API works as documented
+
+### What To Do Instead
+
+| Problem                          | Solution                                 |
+| -------------------------------- | ---------------------------------------- |
+| Test is hard to write            | Write it anyway, ask for help            |
+| Feature not implemented yet      | Write the test, let it fail (RED phase)  |
+| Test requires complex setup      | Create test utilities, mock structs      |
+| Test is flaky                    | Fix the flakiness, don't skip            |
+| "I'll fix it later"              | No. Fix it now or don't commit           |
+| Trait has no implementation      | Create a minimal mock in the doc example |
+| Doc example references `backend` | Define the backend struct in the example |
+
+### Verification
+
+Before any PR:
+
+```bash
+cargo test              # All tests must pass
+cargo doc --document-private-items  # All doc tests must compile
+```
+
+If a test doesn't pass, **fix the code or fix the test**. Never disable the test.
+
+---
+
 ## Code Style Requirements
 
 ### No Panic Policy

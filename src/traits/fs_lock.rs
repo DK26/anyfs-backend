@@ -13,10 +13,11 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```rust
 //! use anyfs_backend::{FsLock, FsHandles, LockType, OpenFlags, FsError};
 //! use std::path::Path;
 //!
+//! // Generic function that works with any FsHandles + FsLock implementation
 //! fn exclusive_update<B: FsHandles + FsLock>(
 //!     backend: &B,
 //!     path: &Path,
@@ -57,9 +58,10 @@ use crate::{FsError, Handle, LockType};
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust
 /// use anyfs_backend::{FsLock, LockType, Handle, FsError};
 ///
+/// // Generic function that works with any FsLock implementation
 /// fn with_shared_lock<B: FsLock>(
 ///     backend: &B,
 ///     handle: Handle,
