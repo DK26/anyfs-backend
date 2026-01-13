@@ -9,6 +9,7 @@
 
 mod fs_dir;
 mod fs_link;
+mod fs_path;
 mod fs_permissions;
 mod fs_read;
 mod fs_stats;
@@ -22,6 +23,7 @@ pub use fs_write::FsWrite;
 
 // Layer 2 - Extended traits
 pub use fs_link::FsLink;
+pub use fs_path::FsPath;
 pub use fs_permissions::FsPermissions;
 pub use fs_stats::FsStats;
 pub use fs_sync::FsSync;

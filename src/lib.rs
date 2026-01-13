@@ -25,6 +25,7 @@
 
 // Private modules
 mod error;
+mod path_resolver;
 mod traits;
 mod types;
 
@@ -45,4 +46,7 @@ pub use types::{
 pub use traits::{Fs, FsDir, FsRead, FsWrite, ReadDirIter};
 
 // Public re-exports - Layer 2 extended traits
-pub use traits::{FsFull, FsLink, FsPermissions, FsStats, FsSync};
+pub use traits::{FsFull, FsLink, FsPath, FsPermissions, FsStats, FsSync};
+
+// Public re-exports - path resolution
+pub use path_resolver::PathResolver;
