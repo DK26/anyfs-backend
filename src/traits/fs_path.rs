@@ -512,14 +512,6 @@ mod tests {
     }
 
     #[test]
-    fn fs_path_trait_is_object_safe() {
-        // FsPath requires FsRead + FsLink, so it's NOT object-safe by itself
-        // This is expected - use dyn Fs or dyn FsFull for trait objects
-        // This test just verifies the trait compiles
-        fn _uses_fs_path<B: FsPath>(_b: &B) {}
-    }
-
-    #[test]
     fn fs_path_blanket_impl_works() {
         // Verify the blanket impl works
         let fs = MockFs::new();

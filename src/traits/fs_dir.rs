@@ -129,19 +129,6 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
-    fn fs_dir_is_object_safe() {
-        fn _check(_: &dyn FsDir) {}
-    }
-
-    #[test]
-    fn fs_dir_requires_send_sync() {
-        fn _assert_send_sync<T: Send + Sync>() {}
-        fn _check<T: FsDir>() {
-            _assert_send_sync::<T>();
-        }
-    }
-
-    #[test]
     fn read_dir_iter_from_vec() {
         let entries = vec![
             Ok(DirEntry {

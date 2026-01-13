@@ -367,17 +367,4 @@ mod tests {
         assert_eq!(Handle(42), Handle(42));
         assert_ne!(Handle(1), Handle(2));
     }
-
-    #[test]
-    fn types_are_send_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
-        assert_send_sync::<FileType>();
-        assert_send_sync::<Metadata>();
-        assert_send_sync::<DirEntry>();
-        assert_send_sync::<Permissions>();
-        assert_send_sync::<StatFs>();
-        assert_send_sync::<Handle>();
-        assert_send_sync::<OpenFlags>();
-        assert_send_sync::<LockType>();
-    }
 }

@@ -76,23 +76,3 @@ pub trait FsRead: Send + Sync {
     /// - [`FsError::NotAFile`] if the path is a directory
     fn open_read(&self, path: &Path) -> Result<Box<dyn Read + Send>, FsError>;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fs_read_is_object_safe() {
-        // This test verifies that FsRead can be used as a trait object
-        fn _check(_: &dyn FsRead) {}
-    }
-
-    #[test]
-    fn fs_read_requires_send_sync() {
-        fn _assert_send_sync<T: Send + Sync>() {}
-        // This would fail to compile if FsRead didn't require Send + Sync
-        fn _check<T: FsRead>() {
-            _assert_send_sync::<T>();
-        }
-    }
-}

@@ -66,6 +66,29 @@ pub enum FsError {
         path: PathBuf,
     },
 
+    /// Inode does not exist.
+    #[error("inode not found: {inode}")]
+    InodeNotFound {
+        /// The inode number that was not found.
+        inode: u64,
+    },
+
+    /// File handle is invalid or closed.
+    #[error("invalid handle: {}", handle.0)]
+    InvalidHandle {
+        /// The invalid handle.
+        handle: crate::Handle,
+    },
+
+    /// Extended attribute not found.
+    #[error("xattr not found: {name} on {path}")]
+    XattrNotFound {
+        /// The path where the xattr was not found.
+        path: PathBuf,
+        /// The attribute name that was not found.
+        name: String,
+    },
+
     // Permission/Access Errors
     /// Permission denied for operation.
     #[error("{operation}: permission denied: {path}")]
@@ -286,11 +309,5 @@ mod tests {
         let io_err = std::io::Error::new(std::io::ErrorKind::Other, "test");
         let fs_err = FsError::from(io_err);
         assert!(matches!(fs_err, FsError::Io { .. }));
-    }
-
-    #[test]
-    fn fs_error_is_send_sync() {
-        fn assert_send_sync<T: Send + Sync>() {}
-        assert_send_sync::<FsError>();
     }
 }

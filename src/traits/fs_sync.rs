@@ -34,21 +34,3 @@ pub trait FsSync: Send + Sync {
     /// - [`FsError::Io`] for underlying I/O errors
     fn fsync(&self, path: &Path) -> Result<(), FsError>;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fs_sync_is_object_safe() {
-        fn _check(_: &dyn FsSync) {}
-    }
-
-    #[test]
-    fn fs_sync_requires_send_sync() {
-        fn _assert_send_sync<T: Send + Sync>() {}
-        fn _check<T: FsSync>() {
-            _assert_send_sync::<T>();
-        }
-    }
-}

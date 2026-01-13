@@ -48,5 +48,11 @@ pub use traits::{Fs, FsDir, FsRead, FsWrite, ReadDirIter};
 // Public re-exports - Layer 2 extended traits
 pub use traits::{FsFull, FsLink, FsPath, FsPermissions, FsStats, FsSync};
 
+// Public re-exports - Layer 3 FUSE traits
+pub use traits::{FsFuse, FsInode};
+
+// Public re-exports - Layer 4 POSIX traits
+pub use traits::{FsHandles, FsLock, FsPosix, FsXattr};
+
 // Public re-exports - path resolution
 pub use path_resolver::PathResolver;

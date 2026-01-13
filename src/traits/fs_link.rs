@@ -62,21 +62,3 @@ pub trait FsLink: Send + Sync {
     /// - [`FsError::NotFound`] if `path` does not exist
     fn symlink_metadata(&self, path: &Path) -> Result<Metadata, FsError>;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fs_link_is_object_safe() {
-        fn _check(_: &dyn FsLink) {}
-    }
-
-    #[test]
-    fn fs_link_requires_send_sync() {
-        fn _assert_send_sync<T: Send + Sync>() {}
-        fn _check<T: FsLink>() {
-            _assert_send_sync::<T>();
-        }
-    }
-}

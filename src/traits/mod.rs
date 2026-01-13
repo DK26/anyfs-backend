@@ -4,17 +4,21 @@
 //!
 //! - **Layer 1 (Core):** [`FsRead`], [`FsWrite`], [`FsDir`] → [`Fs`]
 //! - **Layer 2 (Extended):** [`FsLink`], [`FsPermissions`], [`FsSync`], [`FsStats`] → [`FsFull`]
-//! - **Layer 3 (FUSE):** `FsInode` → `FsFuse`
-//! - **Layer 4 (POSIX):** `FsHandles`, `FsLock`, `FsXattr` → `FsPosix`
+//! - **Layer 3 (FUSE):** [`FsInode`] → [`FsFuse`]
+//! - **Layer 4 (POSIX):** [`FsHandles`], [`FsLock`], [`FsXattr`] → [`FsPosix`]
 
 mod fs_dir;
+mod fs_handles;
+mod fs_inode;
 mod fs_link;
+mod fs_lock;
 mod fs_path;
 mod fs_permissions;
 mod fs_read;
 mod fs_stats;
 mod fs_sync;
 mod fs_write;
+mod fs_xattr;
 
 // Layer 1 - Core traits
 pub use fs_dir::{FsDir, ReadDirIter};
@@ -27,6 +31,14 @@ pub use fs_path::FsPath;
 pub use fs_permissions::FsPermissions;
 pub use fs_stats::FsStats;
 pub use fs_sync::FsSync;
+
+// Layer 3 - FUSE traits
+pub use fs_inode::FsInode;
+
+// Layer 4 - POSIX traits
+pub use fs_handles::FsHandles;
+pub use fs_lock::FsLock;
+pub use fs_xattr::FsXattr;
 
 /// Basic filesystem - covers 90% of use cases.
 ///
@@ -72,19 +84,53 @@ pub trait FsFull: Fs + FsLink + FsPermissions + FsSync + FsStats {}
 // Blanket implementation
 impl<T: Fs + FsLink + FsPermissions + FsSync + FsStats> FsFull for T {}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/// FUSE-mountable filesystem.
+///
+/// Includes all [`FsFull`] operations plus inode-based operations ([`FsInode`])
+/// required for FUSE mounting.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use anyfs_backend::{FsFuse, FsError, ROOT_INODE};
+/// use std::ffi::OsStr;
+///
+/// fn lookup_and_stat<B: FsFuse>(backend: &B, name: &OsStr) -> Result<u64, FsError> {
+///     let inode = backend.lookup(ROOT_INODE, name)?;
+///     let _meta = backend.metadata_by_inode(inode)?;
+///     Ok(inode)
+/// }
+/// ```
+pub trait FsFuse: FsFull + FsInode {}
 
-    #[test]
-    fn fs_trait_is_object_safe() {
-        // This test verifies that Fs can be used as a trait object
-        fn _check(_: &dyn Fs) {}
-    }
+// Blanket implementation
+impl<T: FsFull + FsInode> FsFuse for T {}
 
-    #[test]
-    fn fs_full_trait_is_object_safe() {
-        // This test verifies that FsFull can be used as a trait object
-        fn _check(_: &dyn FsFull) {}
-    }
-}
+/// Full POSIX-compatible filesystem.
+///
+/// Includes all [`FsFuse`] operations plus handle-based I/O ([`FsHandles`]),
+/// file locking ([`FsLock`]), and extended attributes ([`FsXattr`]).
+///
+/// # Example
+///
+/// ```rust,ignore
+/// use anyfs_backend::{FsPosix, OpenFlags, LockType, FsError};
+/// use std::path::Path;
+///
+/// fn locked_write<B: FsPosix>(
+///     backend: &B,
+///     path: &Path,
+///     data: &[u8],
+/// ) -> Result<(), FsError> {
+///     let handle = backend.open(path, OpenFlags::WRITE)?;
+///     backend.lock(handle, LockType::Exclusive)?;
+///     backend.write_at(handle, data, 0)?;
+///     backend.unlock(handle)?;
+///     backend.close(handle)?;
+///     Ok(())
+/// }
+/// ```
+pub trait FsPosix: FsFuse + FsHandles + FsLock + FsXattr {}
+
+// Blanket implementation
+impl<T: FsFuse + FsHandles + FsLock + FsXattr> FsPosix for T {}

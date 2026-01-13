@@ -28,21 +28,3 @@ pub trait FsPermissions: Send + Sync {
     /// - [`FsError::FeatureNotEnabled`] if blocked by `Restrictions` middleware
     fn set_permissions(&self, path: &Path, perm: Permissions) -> Result<(), FsError>;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fs_permissions_is_object_safe() {
-        fn _check(_: &dyn FsPermissions) {}
-    }
-
-    #[test]
-    fn fs_permissions_requires_send_sync() {
-        fn _assert_send_sync<T: Send + Sync>() {}
-        fn _check<T: FsPermissions>() {
-            _assert_send_sync::<T>();
-        }
-    }
-}

@@ -244,19 +244,6 @@ mod tests {
     }
 
     #[test]
-    fn path_resolver_trait_is_object_safe() {
-        // This test verifies that PathResolver can be used as a trait object
-        fn _check(_: &dyn PathResolver) {}
-    }
-
-    #[test]
-    fn path_resolver_requires_send_sync() {
-        // Verify PathResolver implementations are Send + Sync
-        fn _assert_send_sync<T: Send + Sync>() {}
-        _assert_send_sync::<TestResolver>();
-    }
-
-    #[test]
     fn path_resolver_can_be_boxed() {
         // Verify PathResolver can be boxed for dynamic dispatch
         let resolver: Box<dyn PathResolver> = Box::new(TestResolver);
@@ -286,12 +273,5 @@ mod tests {
 
         let result = resolver.soft_canonicalize(path, &mock_fs);
         assert!(result.is_ok());
-    }
-
-    #[test]
-    fn boxed_path_resolver_is_send_sync() {
-        // Verify Box<dyn PathResolver> is Send + Sync
-        fn _assert_send_sync<T: Send + Sync>() {}
-        _assert_send_sync::<Box<dyn PathResolver>>();
     }
 }

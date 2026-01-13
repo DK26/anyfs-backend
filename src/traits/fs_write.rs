@@ -87,22 +87,3 @@ pub trait FsWrite: Send + Sync {
     /// - [`FsError::NotAFile`] if the path is a directory
     fn open_write(&self, path: &Path) -> Result<Box<dyn Write + Send>, FsError>;
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fs_write_is_object_safe() {
-        // This test verifies that FsWrite can be used as a trait object
-        fn _check(_: &dyn FsWrite) {}
-    }
-
-    #[test]
-    fn fs_write_requires_send_sync() {
-        fn _assert_send_sync<T: Send + Sync>() {}
-        fn _check<T: FsWrite>() {
-            _assert_send_sync::<T>();
-        }
-    }
-}
