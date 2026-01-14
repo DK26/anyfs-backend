@@ -143,14 +143,12 @@
 
 // Private modules
 mod error;
+mod ext;
+mod layer;
+mod markers;
 mod path_resolver;
 mod traits;
 mod types;
-
-// TODO: Add these modules as they are implemented
-// mod layer;
-// mod ext;
-// mod markers;
 
 // Public re-exports - error types
 pub use error::FsError;
@@ -174,3 +172,12 @@ pub use traits::{FsHandles, FsLock, FsPosix, FsXattr};
 
 // Public re-exports - path resolution
 pub use path_resolver::PathResolver;
+
+// Public re-exports - infrastructure
+pub use ext::FsExt;
+pub use layer::{Layer, LayerExt};
+pub use markers::SelfResolving;
+
+// Conditional re-exports
+#[cfg(feature = "serde")]
+pub use ext::FsExtJson;

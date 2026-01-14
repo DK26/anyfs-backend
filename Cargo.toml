@@ -17,9 +17,13 @@ version = "1"
 optional = true
 features = ["derive"]
 
+[dependencies.serde_json]
+version = "1"
+optional = true
+
 [features]
 default = []
-serde = ["dep:serde"]
+serde = ["dep:serde", "dep:serde_json"]
 
 [lints.rust]
 missing_docs = "warn"
