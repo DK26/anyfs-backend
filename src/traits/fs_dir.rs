@@ -119,10 +119,6 @@ impl Iterator for ReadDirIter {
     }
 }
 
-// ReadDirIter is Send because the inner iterator is Send
-// It's not Sync because iterators typically aren't (they have mutable state)
-unsafe impl Send for ReadDirIter {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
