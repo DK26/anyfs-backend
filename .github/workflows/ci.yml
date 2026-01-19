@@ -12,13 +12,12 @@ env:
 
 jobs:
     test:
-        name: Test (${{ matrix.os }}, ${{ matrix.rust }})
+        name: Test (${{ matrix.os }})
         runs-on: ${{ matrix.os }}
         strategy:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest, windows-latest, macos-latest]
-                rust: [stable, beta]
         steps:
             - uses: actions/checkout@v4
 
@@ -53,9 +52,7 @@ jobs:
 
                   echo "🎉 All file encoding checks passed!"
 
-            - uses: dtolnay/rust-toolchain@master
-              with:
-                  toolchain: ${{ matrix.rust }}
+            - uses: dtolnay/rust-toolchain@stable
 
             - name: Cache cargo registry
               uses: actions/cache@v4
