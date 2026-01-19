@@ -360,3 +360,7 @@ at your option.
 ## Contributing
 
 See [AGENTS.md](AGENTS.md) for contribution guidelines and architecture decisions.
+
+## For AI Agents
+
+See [LLM_CONTEXT.md](LLM_CONTEXT.md) for a Context7-style reference optimized for LLM consumption.
