@@ -1,13 +1,13 @@
 [package]
 name = "anyfs-backend"
-version = "0.1.0"
-edition = "2024"
+version = "0.1.0-pre.1"
+edition = "2021"
 description = "Core traits and types for the AnyFS pluggable virtual filesystem standard"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/DK26/anyfs-backend"
 keywords = ["filesystem", "virtual", "vfs", "traits"]
 categories = ["filesystem", "development-tools"]
-rust-version = "1.85"
+rust-version = "1.68"
 
 [dependencies]
 thiserror = "2"
@@ -24,7 +24,3 @@ optional = true
 [features]
 default = []
 serde = ["dep:serde", "dep:serde_json"]
-
-[lints.rust]
-missing_docs = "warn"
-rust_2018_idioms = "warn"
