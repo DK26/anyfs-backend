@@ -42,31 +42,31 @@ use std::time::SystemTime;
 pub struct InMemoryFs {
     /// File contents, keyed by path
     files: RwLock<HashMap<PathBuf, Vec<u8>>>,
-    
+
     /// Set of directories
     dirs: RwLock<std::collections::HashSet<PathBuf>>,
-    
+
     /// Symlinks: link_path -> target_path
     symlinks: RwLock<HashMap<PathBuf, PathBuf>>,
-    
+
     /// Extended attributes: path -> (name -> value)
     xattrs: RwLock<HashMap<PathBuf, HashMap<String, Vec<u8>>>>,
-    
+
     /// Inode mapping: path -> inode number
     inodes: RwLock<HashMap<PathBuf, u64>>,
-    
+
     /// Reverse inode mapping: inode number -> path
     inode_to_path: RwLock<HashMap<u64, PathBuf>>,
-    
+
     /// Open file handles: handle_id -> (path, flags)
     handles: RwLock<HashMap<u64, OpenFile>>,
-    
+
     /// File locks: handle_id -> lock state
     locks: RwLock<HashMap<u64, LockState>>,
-    
+
     /// Counter for generating unique inode numbers
     next_inode: AtomicU64,
-    
+
     /// Counter for generating unique handle IDs
     next_handle: AtomicU64,
 }
@@ -81,7 +81,7 @@ struct OpenFile {
 #[derive(Clone, Copy, PartialEq)]
 enum LockState {
     Unlocked,
-    Shared(usize),  // Count of shared locks
+    Shared(usize), // Count of shared locks
     Exclusive,
 }
 
@@ -102,37 +102,37 @@ impl InMemoryFs {
             next_inode: AtomicU64::new(2), // 1 is reserved for root
             next_handle: AtomicU64::new(1),
         };
-        
+
         // Create root directory with inode 1
         fs.dirs.write().unwrap().insert(PathBuf::from("/"));
         fs.assign_inode(Path::new("/"));
-        
+
         fs
     }
 
     /// Assign an inode to a path (or return existing inode).
     fn assign_inode(&self, path: &Path) -> u64 {
         let mut inodes = self.inodes.write().unwrap();
-        
+
         // Return existing inode if path already has one
         if let Some(&inode) = inodes.get(path) {
             return inode;
         }
-        
+
         // Root always gets inode 1
         let inode = if path == Path::new("/") {
             ROOT_INODE
         } else {
             self.next_inode.fetch_add(1, Ordering::SeqCst)
         };
-        
+
         // Store bidirectional mapping
         inodes.insert(path.to_path_buf(), inode);
         self.inode_to_path
             .write()
             .unwrap()
             .insert(inode, path.to_path_buf());
-        
+
         inode
     }
 
@@ -183,11 +183,11 @@ impl FsRead for InMemoryFs {
     fn read_range(&self, path: &Path, offset: u64, len: usize) -> Result<Vec<u8>, FsError> {
         let data = self.read(path)?;
         let start = offset as usize;
-        
+
         if start >= data.len() {
             return Ok(Vec::new());
         }
-        
+
         let end = (start + len).min(data.len());
         Ok(data[start..end].to_vec())
     }
@@ -265,15 +265,15 @@ impl FsWrite for InMemoryFs {
             .ok_or_else(|| FsError::NotFound {
                 path: path.to_path_buf(),
             })?;
-        
+
         // Clean up inode mapping
         if let Some(inode) = self.inodes.write().unwrap().remove(path) {
             self.inode_to_path.write().unwrap().remove(&inode);
         }
-        
+
         // Clean up xattrs
         self.xattrs.write().unwrap().remove(path);
-        
+
         Ok(())
     }
 
@@ -284,20 +284,23 @@ impl FsWrite for InMemoryFs {
         })?;
         files.insert(to.to_path_buf(), data);
         drop(files);
-        
+
         // Update inode mappings
         if let Some(inode) = self.inodes.write().unwrap().remove(from) {
             self.inodes.write().unwrap().insert(to.to_path_buf(), inode);
-            self.inode_to_path.write().unwrap().insert(inode, to.to_path_buf());
+            self.inode_to_path
+                .write()
+                .unwrap()
+                .insert(inode, to.to_path_buf());
         } else {
             self.assign_inode(to);
         }
-        
+
         // Move xattrs
         if let Some(attrs) = self.xattrs.write().unwrap().remove(from) {
             self.xattrs.write().unwrap().insert(to.to_path_buf(), attrs);
         }
-        
+
         Ok(())
     }
 
@@ -320,7 +323,7 @@ impl FsWrite for InMemoryFs {
         if !self.files.read().unwrap().contains_key(path) {
             self.write(path, &[])?;
         }
-        
+
         // Return a cursor that writes to a buffer
         // Note: In a real implementation, this would write back on drop
         Ok(Box::new(std::io::Cursor::new(Vec::new())))
@@ -415,14 +418,14 @@ impl FsDir for InMemoryFs {
 
     fn create_dir(&self, path: &Path) -> Result<(), FsError> {
         let mut dirs = self.dirs.write().unwrap();
-        
+
         if dirs.contains(path) {
             return Err(FsError::AlreadyExists {
                 path: path.to_path_buf(),
                 operation: "create_dir",
             });
         }
-        
+
         // Check parent exists
         if let Some(parent) = path.parent() {
             if parent != Path::new("") && parent != Path::new("/") && !dirs.contains(parent) {
@@ -431,20 +434,20 @@ impl FsDir for InMemoryFs {
                 });
             }
         }
-        
+
         dirs.insert(path.to_path_buf());
         drop(dirs);
         self.assign_inode(path);
-        
+
         Ok(())
     }
 
     fn create_dir_all(&self, path: &Path) -> Result<(), FsError> {
         let mut current = PathBuf::new();
-        
+
         for component in path.components() {
             current.push(component);
-            
+
             let mut dirs = self.dirs.write().unwrap();
             if !dirs.contains(&current) {
                 dirs.insert(current.clone());
@@ -452,7 +455,7 @@ impl FsDir for InMemoryFs {
                 self.assign_inode(&current);
             }
         }
-        
+
         Ok(())
     }
 
@@ -464,31 +467,31 @@ impl FsDir for InMemoryFs {
             .unwrap()
             .keys()
             .any(|p| p.parent() == Some(path));
-        
+
         let has_subdirs = self
             .dirs
             .read()
             .unwrap()
             .iter()
             .any(|p| p.parent() == Some(path) && p != path);
-        
+
         if has_files || has_subdirs {
             return Err(FsError::DirectoryNotEmpty {
                 path: path.to_path_buf(),
             });
         }
-        
+
         if !self.dirs.write().unwrap().remove(path) {
             return Err(FsError::NotFound {
                 path: path.to_path_buf(),
             });
         }
-        
+
         // Clean up inode
         if let Some(inode) = self.inodes.write().unwrap().remove(path) {
             self.inode_to_path.write().unwrap().remove(&inode);
         }
-        
+
         Ok(())
     }
 
@@ -498,19 +501,16 @@ impl FsDir for InMemoryFs {
             .write()
             .unwrap()
             .retain(|p, _| !p.starts_with(path));
-        
+
         // Remove all subdirectories under this path
-        self.dirs
-            .write()
-            .unwrap()
-            .retain(|p| !p.starts_with(path));
-        
+        self.dirs.write().unwrap().retain(|p| !p.starts_with(path));
+
         // Remove all symlinks under this path
         self.symlinks
             .write()
             .unwrap()
             .retain(|p, _| !p.starts_with(path));
-        
+
         // Clean up inodes
         let paths_to_remove: Vec<_> = self
             .inodes
@@ -520,13 +520,13 @@ impl FsDir for InMemoryFs {
             .filter(|p| p.starts_with(path))
             .cloned()
             .collect();
-        
+
         for p in paths_to_remove {
             if let Some(inode) = self.inodes.write().unwrap().remove(&p) {
                 self.inode_to_path.write().unwrap().remove(&inode);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -543,13 +543,13 @@ impl FsLink for InMemoryFs {
                 operation: "symlink",
             });
         }
-        
+
         self.symlinks
             .write()
             .unwrap()
             .insert(link.to_path_buf(), target.to_path_buf());
         self.assign_inode(link);
-        
+
         Ok(())
     }
 
@@ -557,7 +557,7 @@ impl FsLink for InMemoryFs {
         // For in-memory fs, we just copy the data (true hard links would share data)
         let data = self.read(original)?;
         self.write(link, &data)?;
-        
+
         // In a real implementation, you'd update nlink count
         Ok(())
     }
@@ -604,7 +604,7 @@ impl FsPermissions for InMemoryFs {
                 path: path.to_path_buf(),
             });
         }
-        
+
         // In a real implementation, you'd store and enforce permissions
         Ok(())
     }
@@ -627,7 +627,7 @@ impl FsSync for InMemoryFs {
                 path: path.to_path_buf(),
             });
         }
-        
+
         // In-memory filesystem is always synchronized
         Ok(())
     }
@@ -642,9 +642,9 @@ impl FsStats for InMemoryFs {
         let files = self.files.read().unwrap();
         let used_bytes: u64 = files.values().map(|d| d.len() as u64).sum();
         let used_inodes = files.len() + self.dirs.read().unwrap().len();
-        
+
         Ok(StatFs {
-            total_bytes: 1024 * 1024 * 100,  // 100 MB
+            total_bytes: 1024 * 1024 * 100, // 100 MB
             used_bytes,
             available_bytes: 1024 * 1024 * 100 - used_bytes,
             total_inodes: 100_000,
@@ -711,7 +711,7 @@ impl FsHandles for InMemoryFs {
         }
 
         let handle_id = self.next_handle.fetch_add(1, Ordering::SeqCst);
-        
+
         self.handles.write().unwrap().insert(
             handle_id,
             OpenFile {
@@ -719,7 +719,7 @@ impl FsHandles for InMemoryFs {
                 flags,
             },
         );
-        
+
         Ok(Handle(handle_id))
     }
 
@@ -746,11 +746,11 @@ impl FsHandles for InMemoryFs {
         if start >= data.len() {
             return Ok(0);
         }
-        
+
         let end = (start + buf.len()).min(data.len());
         let bytes_read = end - start;
         buf[..bytes_read].copy_from_slice(&data[start..end]);
-        
+
         Ok(bytes_read)
     }
 
@@ -768,26 +768,26 @@ impl FsHandles for InMemoryFs {
                     operation: "write",
                 });
             }
-            
+
             open_file.path.clone()
         };
 
         let mut files = self.files.write().unwrap();
         let file_data = files.entry(path).or_default();
-        
+
         let start = offset as usize;
         if start + data.len() > file_data.len() {
             file_data.resize(start + data.len(), 0);
         }
         file_data[start..start + data.len()].copy_from_slice(data);
-        
+
         Ok(data.len())
     }
 
     fn close(&self, handle: Handle) -> Result<(), FsError> {
         // Release any locks
         self.locks.write().unwrap().remove(&handle.0);
-        
+
         // Remove handle
         self.handles
             .write()
@@ -869,7 +869,7 @@ impl FsLock for InMemoryFs {
                 LockState::Unlocked => {}
             }
         }
-        
+
         Ok(())
     }
 }
@@ -886,7 +886,7 @@ impl FsXattr for InMemoryFs {
                 path: path.to_path_buf(),
             });
         }
-        
+
         self.xattrs
             .read()
             .unwrap()
@@ -905,14 +905,14 @@ impl FsXattr for InMemoryFs {
                 path: path.to_path_buf(),
             });
         }
-        
+
         self.xattrs
             .write()
             .unwrap()
             .entry(path.to_path_buf())
             .or_default()
             .insert(name.to_string(), value.to_vec());
-        
+
         Ok(())
     }
 
@@ -923,7 +923,7 @@ impl FsXattr for InMemoryFs {
                 path: path.to_path_buf(),
             });
         }
-        
+
         self.xattrs
             .write()
             .unwrap()
@@ -933,7 +933,7 @@ impl FsXattr for InMemoryFs {
                 path: path.to_path_buf(),
                 name: name.to_string(),
             })?;
-        
+
         Ok(())
     }
 
@@ -944,7 +944,7 @@ impl FsXattr for InMemoryFs {
                 path: path.to_path_buf(),
             });
         }
-        
+
         Ok(self
             .xattrs
             .read()
@@ -966,103 +966,126 @@ fn main() {
 
     // --- Layer 1: Fs operations ---
     println!("--- Layer 1: Fs (FsRead + FsWrite + FsDir) ---\n");
-    
+
     fs.create_dir_all(Path::new("/project/src")).unwrap();
-    fs.write(Path::new("/project/README.md"), b"# My Project\n\nHello!").unwrap();
-    fs.write(Path::new("/project/src/main.rs"), b"fn main() {}").unwrap();
-    
+    fs.write(Path::new("/project/README.md"), b"# My Project\n\nHello!")
+        .unwrap();
+    fs.write(Path::new("/project/src/main.rs"), b"fn main() {}")
+        .unwrap();
+
     println!("Created project structure:");
     for entry in fs.read_dir(Path::new("/project")).unwrap() {
         let entry = entry.unwrap();
         println!("  {} ({:?})", entry.name, entry.file_type);
     }
-    
+
     let readme = fs.read_to_string(Path::new("/project/README.md")).unwrap();
     println!("\nREADME.md content:\n{readme}");
 
     // --- Layer 2: FsFull operations ---
     println!("\n--- Layer 2: FsFull (+FsLink, +FsStats, +FsSync) ---\n");
-    
-    fs.symlink(Path::new("/project/README.md"), Path::new("/project/docs")).unwrap();
+
+    fs.symlink(Path::new("/project/README.md"), Path::new("/project/docs"))
+        .unwrap();
     let target = fs.read_link(Path::new("/project/docs")).unwrap();
     println!("Symlink /project/docs -> {}", target.display());
-    
+
     let stats = fs.statfs().unwrap();
-    println!("Filesystem: {} bytes used, {} available", stats.used_bytes, stats.available_bytes);
-    
+    println!(
+        "Filesystem: {} bytes used, {} available",
+        stats.used_bytes, stats.available_bytes
+    );
+
     fs.sync().unwrap();
     println!("Filesystem synced");
 
     // --- Layer 3: FsFuse operations ---
     println!("\n--- Layer 3: FsFuse (+FsInode) ---\n");
-    
+
     let root_inode = fs.path_to_inode(Path::new("/")).unwrap();
     println!("Root inode: {root_inode} (should be {})", ROOT_INODE);
-    
+
     let project_inode = fs.lookup(root_inode, OsStr::new("project")).unwrap();
     println!("Project inode: {project_inode}");
-    
+
     let meta = fs.metadata_by_inode(project_inode).unwrap();
     println!("Project metadata: {:?}", meta.file_type);
 
     // --- Layer 4: FsPosix operations ---
     println!("\n--- Layer 4: FsPosix (+FsHandles, +FsLock, +FsXattr) ---\n");
-    
+
     // Handle-based I/O
-    let handle = fs.open(Path::new("/project/data.bin"), OpenFlags::WRITE).unwrap();
+    let handle = fs
+        .open(Path::new("/project/data.bin"), OpenFlags::WRITE)
+        .unwrap();
     fs.write_at(handle, b"HEADER", 0).unwrap();
     fs.write_at(handle, b"DATA", 6).unwrap();
     fs.close(handle).unwrap();
     println!("Wrote data.bin using handle-based I/O");
-    
-    let handle = fs.open(Path::new("/project/data.bin"), OpenFlags::READ).unwrap();
+
+    let handle = fs
+        .open(Path::new("/project/data.bin"), OpenFlags::READ)
+        .unwrap();
     let mut buf = [0u8; 10];
     let n = fs.read_at(handle, &mut buf, 0).unwrap();
     println!("Read {} bytes: {:?}", n, String::from_utf8_lossy(&buf[..n]));
     fs.close(handle).unwrap();
-    
+
     // Locking
-    let handle = fs.open(Path::new("/project/data.bin"), OpenFlags::READ).unwrap();
+    let handle = fs
+        .open(Path::new("/project/data.bin"), OpenFlags::READ)
+        .unwrap();
     fs.lock(handle, LockType::Shared).unwrap();
     println!("Acquired shared lock");
     fs.unlock(handle).unwrap();
     println!("Released lock");
     fs.close(handle).unwrap();
-    
+
     // Extended attributes
-    fs.set_xattr(Path::new("/project/README.md"), "user.author", b"Alice").unwrap();
-    let author = fs.get_xattr(Path::new("/project/README.md"), "user.author").unwrap();
+    fs.set_xattr(Path::new("/project/README.md"), "user.author", b"Alice")
+        .unwrap();
+    let author = fs
+        .get_xattr(Path::new("/project/README.md"), "user.author")
+        .unwrap();
     println!("xattr user.author = {:?}", String::from_utf8_lossy(&author));
-    
+
     let attrs = fs.list_xattr(Path::new("/project/README.md")).unwrap();
     println!("All xattrs: {:?}", attrs);
 
     // --- Using as trait objects ---
     println!("\n--- Using as Trait Objects ---\n");
-    
+
     fn use_as_fs(fs: &dyn Fs) {
-        println!("  Works as &dyn Fs: {} files in root", 
-            fs.read_dir(Path::new("/")).unwrap().count());
+        println!(
+            "  Works as &dyn Fs: {} files in root",
+            fs.read_dir(Path::new("/")).unwrap().count()
+        );
     }
-    
+
     fn use_as_full(fs: &dyn FsFull) {
-        println!("  Works as &dyn FsFull: {} bytes total", 
-            fs.statfs().unwrap().total_bytes);
+        println!(
+            "  Works as &dyn FsFull: {} bytes total",
+            fs.statfs().unwrap().total_bytes
+        );
     }
-    
+
     fn use_as_fuse(fs: &dyn FsFuse) {
-        println!("  Works as &dyn FsFuse: root inode = {}", 
-            fs.path_to_inode(Path::new("/")).unwrap());
+        println!(
+            "  Works as &dyn FsFuse: root inode = {}",
+            fs.path_to_inode(Path::new("/")).unwrap()
+        );
     }
-    
+
     fn use_as_posix(fs: &dyn FsPosix) {
-        let handle = fs.open(Path::new("/project/README.md"), OpenFlags::READ).unwrap();
+        let handle = fs
+            .open(Path::new("/project/README.md"), OpenFlags::READ)
+            .unwrap();
         let mut buf = [0u8; 5];
         let n = fs.read_at(handle, &mut buf, 0).unwrap();
         fs.close(handle).unwrap();
         println!("  Works as &dyn FsPosix: read {} bytes", n);
     }
-    
+
     use_as_fs(&fs);
     use_as_full(&fs);
     use_as_fuse(&fs);
