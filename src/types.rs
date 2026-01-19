@@ -711,23 +711,33 @@ mod tests {
 
     #[test]
     fn open_flags_constants() {
-        assert!(OpenFlags::READ.read);
-        assert!(!OpenFlags::READ.write);
-        assert!(!OpenFlags::READ.create);
+        // Bind to variables to avoid constant-expression lints
+        let read = OpenFlags::READ;
+        let write = OpenFlags::WRITE;
+        let read_write = OpenFlags::READ_WRITE;
+        let append = OpenFlags::APPEND;
 
-        assert!(!OpenFlags::WRITE.read);
-        assert!(OpenFlags::WRITE.write);
-        assert!(OpenFlags::WRITE.create);
-        assert!(OpenFlags::WRITE.truncate);
+        // READ: read-only access
+        assert!(read.read);
+        assert!(!read.write);
+        assert!(!read.create);
 
-        assert!(OpenFlags::READ_WRITE.read);
-        assert!(OpenFlags::READ_WRITE.write);
-        assert!(!OpenFlags::READ_WRITE.create);
+        // WRITE: write with create and truncate
+        assert!(!write.read);
+        assert!(write.write);
+        assert!(write.create);
+        assert!(write.truncate);
 
-        assert!(OpenFlags::APPEND.write);
-        assert!(OpenFlags::APPEND.create);
-        assert!(OpenFlags::APPEND.append);
-        assert!(!OpenFlags::APPEND.truncate);
+        // READ_WRITE: both read and write
+        assert!(read_write.read);
+        assert!(read_write.write);
+        assert!(!read_write.create);
+
+        // APPEND: write with create, append mode, no truncate
+        assert!(append.write);
+        assert!(append.create);
+        assert!(append.append);
+        assert!(!append.truncate);
     }
 
     #[test]

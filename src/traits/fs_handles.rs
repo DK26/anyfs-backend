@@ -159,8 +159,8 @@ pub trait FsHandles: Send + Sync {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::RwLock;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::RwLock;
 
     /// Information about an open file handle
     struct OpenFile {

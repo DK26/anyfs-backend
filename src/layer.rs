@@ -252,8 +252,7 @@ mod tests {
 
         // Mock wrapper
         struct WrappedBackend<B> {
-            #[allow(dead_code)]
-            inner: B,
+            _inner: B,
         }
 
         impl<B: FsRead> FsRead for WrappedBackend<B> {
@@ -329,7 +328,7 @@ mod tests {
             type Backend = WrappedBackend<B>;
 
             fn layer(self, backend: B) -> Self::Backend {
-                WrappedBackend { inner: backend }
+                WrappedBackend { _inner: backend }
             }
         }
 

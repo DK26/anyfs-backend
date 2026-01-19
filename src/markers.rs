@@ -93,14 +93,13 @@ mod tests {
     #[test]
     fn self_resolving_is_implementable() {
         struct TestBackend {
-            #[allow(dead_code)]
-            root: PathBuf,
+            _root: PathBuf,
         }
 
         impl SelfResolving for TestBackend {}
 
         let backend = TestBackend {
-            root: PathBuf::from("/test"),
+            _root: PathBuf::from("/test"),
         };
 
         // Verify the marker trait is implemented

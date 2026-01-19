@@ -155,7 +155,7 @@ pub use error::FsError;
 
 // Public re-exports - core types
 pub use types::{
-    DirEntry, FileType, Handle, LockType, Metadata, OpenFlags, Permissions, ROOT_INODE, StatFs,
+    DirEntry, FileType, Handle, LockType, Metadata, OpenFlags, Permissions, StatFs, ROOT_INODE,
 };
 
 // Public re-exports - Layer 1 core traits

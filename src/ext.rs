@@ -173,7 +173,7 @@ impl<B: Fs + ?Sized> FsExt for B {}
 #[cfg(feature = "serde")]
 mod json {
     use super::*;
-    use serde::{Serialize, de::DeserializeOwned};
+    use serde::{de::DeserializeOwned, Serialize};
 
     /// JSON serialization extension methods.
     ///
