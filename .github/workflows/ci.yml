@@ -2,7 +2,7 @@ name: CI
 
 on:
     push:
-        branches: [main]
+        branches: [main, dev]
     pull_request:
         branches: [main]
 
@@ -21,9 +21,61 @@ jobs:
                 rust: [stable, beta]
         steps:
             - uses: actions/checkout@v4
+
+            - name: Validate file encodings
+              shell: bash
+              run: |
+                  echo "🔍 Validating UTF-8 encoding for critical files..."
+
+                  check_utf8() {
+                      local file="$1"
+                      if ! file "$file" | grep -qiE 'UTF-8|ASCII|text'; then
+                          echo "❌ $file: Not valid UTF-8 or ASCII text"
+                          return 1
+                      fi
+                      echo "✅ $file: Encoding OK"
+                      return 0
+                  }
+
+                  # Critical files
+                  check_utf8 README.md || exit 1
+                  check_utf8 Cargo.toml || exit 1
+
+                  # Check for BOM (should not be present)
+                  if command -v xxd >/dev/null 2>&1 && head -c 3 README.md | xxd | grep -qi efbbbf; then
+                      echo "❌ README.md contains UTF-8 BOM"; exit 1
+                  fi
+
+                  # Source files
+                  for f in $(find src -name "*.rs" 2>/dev/null); do
+                      check_utf8 "$f" || exit 1
+                  done
+
+                  echo "🎉 All file encoding checks passed!"
+
             - uses: dtolnay/rust-toolchain@master
               with:
                   toolchain: ${{ matrix.rust }}
+
+            - name: Cache cargo registry
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                  key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-
+
+            - name: Cache cargo build
+              uses: actions/cache@v4
+              with:
+                  path: target/
+                  key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-cargo-build-
+
             - name: Run tests
               run: cargo test --all-features --verbose
             - name: Run tests (no default features)
@@ -38,9 +90,9 @@ jobs:
               with:
                   components: clippy
             - name: Clippy (all features)
-              run: cargo clippy --all-features -- -D warnings
+              run: cargo clippy --all-targets --all-features -- -D warnings
             - name: Clippy (no features)
-              run: cargo clippy --no-default-features -- -D warnings
+              run: cargo clippy --all-targets --no-default-features -- -D warnings
 
     fmt:
         name: Format
@@ -51,7 +103,56 @@ jobs:
               with:
                   components: rustfmt
             - name: Check formatting
-              run: cargo fmt --check
+              run: cargo fmt --all -- --check
+
+            - name: Show formatting diff (if check failed)
+              if: failure()
+              run: |
+                  echo "❌ Formatting check failed. Run 'cargo fmt --all' to fix."
+                  echo "Here's what would be changed:"
+                  cargo fmt --all -- --check --verbose || true
+                  echo ""
+                  echo "To fix locally, run: cargo fmt --all"
+
+    policy:
+        name: Code Policy
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Enforce doctest/lint suppression policy
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  echo "🔎 Scanning for forbidden patterns: #[allow(...)], no_run/ignore in rustdoc fences"
+
+                  # Find all Rust source files
+                  RUST_FILES=$(find src tests -name "*.rs" 2>/dev/null || true)
+
+                  if [ -z "$RUST_FILES" ]; then
+                      echo "No Rust files found, skipping policy check"
+                      exit 0
+                  fi
+
+                  # 1) Block #[allow(...)] - we want all lints enabled
+                  ALLOW_PATTERN='#\s*\[\s*allow\s*\('
+                  ALLOW_MATCHES=$(echo "$RUST_FILES" | xargs grep -RInE "$ALLOW_PATTERN" 2>/dev/null || true)
+
+                  # 2) Block rustdoc skip flags in code fences (per AGENTS.md)
+                  RUSTDOC_FORBIDDEN='```\s*rust[^\n]*\b(no_run|ignore)\b'
+                  RUSTDOC_MATCHES=$(echo "$RUST_FILES" | xargs grep -RInE "$RUSTDOC_FORBIDDEN" 2>/dev/null || true)
+
+                  if [ -n "$ALLOW_MATCHES" ] || [ -n "$RUSTDOC_MATCHES" ]; then
+                      echo "❌ Forbidden patterns detected!"
+                      [ -n "$ALLOW_MATCHES" ] && echo -e "\n#[allow(...)] found:\n$ALLOW_MATCHES"
+                      [ -n "$RUSTDOC_MATCHES" ] && echo -e "\nRustdoc ignore/no_run found:\n$RUSTDOC_MATCHES"
+                      echo ""
+                      echo "Per AGENTS.md: All tests and doc examples MUST compile and run."
+                      echo "Remove #[allow(...)] attributes and use runnable doc examples."
+                      exit 1
+                  fi
+
+                  echo "✅ No forbidden suppression patterns detected."
 
     docs:
         name: Documentation
@@ -60,7 +161,7 @@ jobs:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@stable
             - name: Build documentation
-              run: cargo doc --no-deps --all-features
+              run: cargo doc --no-deps --document-private-items --all-features
               env:
                   RUSTDOCFLAGS: -Dwarnings
             - name: Test doc examples
@@ -78,15 +179,20 @@ jobs:
               run: cargo build --target wasm32-unknown-unknown --no-default-features
 
     msrv:
-        name: MSRV (1.75)
+        name: MSRV (1.68)
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@master
               with:
-                  toolchain: "1.75"
+                  toolchain: "1.68"
+                  components: clippy
             - name: Check MSRV
               run: cargo check --all-features
+            - name: Clippy with MSRV
+              run: cargo clippy --all-features -- -D warnings
+            - name: Test with MSRV
+              run: cargo test --all-features
 
     # Ensure no unsafe code
     safety:
@@ -96,7 +202,13 @@ jobs:
             - uses: actions/checkout@v4
             - uses: dtolnay/rust-toolchain@stable
             - name: Check for unsafe code
-              run: cargo build --all-features 2>&1 | grep -i "unsafe" && exit 1 || echo "No unsafe code found"
+              run: |
+                  echo "Scanning for unsafe code..."
+                  if grep -rn "unsafe" src/ --include="*.rs" | grep -v "// SAFETY:" | grep -v "/// # Safety"; then
+                      echo "❌ Found unsafe code without SAFETY comment"
+                      exit 1
+                  fi
+                  echo "✅ No undocumented unsafe code found"
 
     # Feature combinations
     features:
