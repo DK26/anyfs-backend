@@ -5,6 +5,9 @@ on:
         tags:
             - "v*"
 
+permissions:
+    contents: write
+
 jobs:
     publish:
         name: Publish to crates.io
@@ -38,5 +41,5 @@ jobs:
 
                       **Full Changelog**: https://github.com/DK26/anyfs-backend/compare/v0.0.1...${{ github.ref_name }}
                   draft: false
-                  prerelease: false
+                  prerelease: ${{ contains(github.ref_name, 'pre') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
                   generate_release_notes: true
