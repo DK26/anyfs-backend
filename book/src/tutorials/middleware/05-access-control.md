@@ -171,9 +171,9 @@ impl<B: FsRead> FsRead for PathRestrictedFs<B> {
         self.inner.metadata(path)
     }
 
-    fn exists(&self, path: &Path) -> bool {
+    fn exists(&self, path: &Path) -> Result<bool, FsError> {
         if self.check_path(path).is_err() {
-            return false;  // Pretend it doesn't exist
+            return Ok(false);  // Pretend it doesn't exist
         }
         self.inner.exists(path)
     }

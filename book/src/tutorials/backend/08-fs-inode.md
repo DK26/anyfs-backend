@@ -30,7 +30,7 @@ pub trait FsInode: Send + Sync {
     fn metadata_by_inode(&self, inode: u64) -> Result<Metadata, FsError>;
 
     /// Look up child by name within a parent directory.
-    fn lookup(&self, parent_inode: u64, name: &str) -> Result<u64, FsError>;
+    fn lookup(&self, parent_inode: u64, name: &OsStr) -> Result<u64, FsError>;
 }
 ```
 
@@ -98,7 +98,9 @@ Note the special error type `FsError::InodeNotFound`.
 This is how FUSE navigates directories:
 
 ```rust
-    fn lookup(&self, parent_inode: u64, name: &str) -> Result<u64, FsError> {
+use std::ffi::OsStr;
+
+    fn lookup(&self, parent_inode: u64, name: &OsStr) -> Result<u64, FsError> {
         let inner = self.inner.read().unwrap();
 
         // Get parent path

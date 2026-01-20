@@ -99,7 +99,7 @@ impl<B: FsRead> FsRead for MetricsFs<B> {
         self.inner.metadata(path)
     }
 
-    fn exists(&self, path: &Path) -> bool {
+    fn exists(&self, path: &Path) -> Result<bool, FsError> {
         self.inner.exists(path)
     }
 }

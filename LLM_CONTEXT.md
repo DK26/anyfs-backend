@@ -83,7 +83,7 @@ fn extended_ops<B: FsFull>(fs: &B) -> Result<(), FsError> {
     
     // Filesystem stats
     let stats = fs.statfs()?;
-    println!("Total: {} Free: {}", stats.total_bytes, stats.free_bytes);
+    println!("Total: {} Used: {}", stats.total_bytes, stats.used_bytes);
     
     Ok(())
 }
@@ -251,11 +251,14 @@ perms.readonly() // bool
 use anyfs_backend::StatFs;
 
 let stats = fs.statfs()?;
-stats.total_bytes     // u64
-stats.free_bytes      // u64
-stats.available_bytes // u64
-stats.total_inodes    // Option<u64>
-stats.free_inodes     // Option<u64>
+stats.total_bytes      // u64
+stats.used_bytes       // u64
+stats.available_bytes  // u64
+stats.total_inodes     // u64
+stats.used_inodes      // u64
+stats.available_inodes // u64
+stats.block_size       // u64
+stats.max_name_len     // u64
 ```
 
 ## Implementing a Backend

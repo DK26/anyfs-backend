@@ -196,11 +196,16 @@ println!("Used: {} bytes", stats.used_bytes);
 
 ### StatFs Fields
 
-| Field             | Type  | Description     |
-| ----------------- | ----- | --------------- |
-| `total_bytes`     | `u64` | Total capacity  |
-| `available_bytes` | `u64` | Available space |
-| `used_bytes`      | `u64` | Used space      |
+| Field              | Type  | Description                            |
+| ------------------ | ----- | -------------------------------------- |
+| `total_bytes`      | `u64` | Total capacity (0 = unlimited)         |
+| `used_bytes`       | `u64` | Currently used bytes                   |
+| `available_bytes`  | `u64` | Available bytes for use                |
+| `total_inodes`     | `u64` | Total number of inodes (0 = unlimited) |
+| `used_inodes`      | `u64` | Number of used inodes                  |
+| `available_inodes` | `u64` | Number of available inodes             |
+| `block_size`       | `u64` | Block size in bytes                    |
+| `max_name_len`     | `u64` | Maximum filename length                |
 
 ## Handle
 

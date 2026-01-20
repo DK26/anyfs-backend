@@ -83,9 +83,9 @@ impl<B: FsRead> FsRead for LoggingFs<B> {
         self.inner.metadata(path)
     }
 
-    fn exists(&self, path: &Path) -> bool {
+    fn exists(&self, path: &Path) -> Result<bool, FsError> {
         let result = self.inner.exists(path);
-        println!("[{}] exists: {} → {}", self.prefix, path.display(), result);
+        println!("[{}] exists: {} → {:?}", self.prefix, path.display(), result);
         result
     }
 }

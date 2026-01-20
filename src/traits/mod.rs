@@ -44,7 +44,7 @@
 //! #     fn read_range(&self, _: &std::path::Path, _: u64, _: usize) -> Result<Vec<u8>, anyfs_backend::FsError> { Ok(vec![]) }
 //! #     fn exists(&self, _: &std::path::Path) -> Result<bool, anyfs_backend::FsError> { Ok(true) }
 //! #     fn metadata(&self, _: &std::path::Path) -> Result<anyfs_backend::Metadata, anyfs_backend::FsError> { Ok(anyfs_backend::Metadata::default()) }
-//! #     fn open_read(&self, _: &std::path::Path) -> Result<Box<dyn std::io::Read + Send>, anyfs_backend::FsError> { unimplemented!() }
+//! #     fn open_read(&self, _: &std::path::Path) -> Result<Box<dyn std::io::Read + Send>, anyfs_backend::FsError> { Ok(Box::new(std::io::empty())) }
 //! # }
 //! # impl FsWrite for MyBackend {
 //! #     fn write(&self, _: &std::path::Path, _: &[u8]) -> Result<(), anyfs_backend::FsError> { Ok(()) }
@@ -53,7 +53,7 @@
 //! #     fn remove_file(&self, _: &std::path::Path) -> Result<(), anyfs_backend::FsError> { Ok(()) }
 //! #     fn rename(&self, _: &std::path::Path, _: &std::path::Path) -> Result<(), anyfs_backend::FsError> { Ok(()) }
 //! #     fn copy(&self, _: &std::path::Path, _: &std::path::Path) -> Result<(), anyfs_backend::FsError> { Ok(()) }
-//! #     fn open_write(&self, _: &std::path::Path) -> Result<Box<dyn std::io::Write + Send>, anyfs_backend::FsError> { unimplemented!() }
+//! #     fn open_write(&self, _: &std::path::Path) -> Result<Box<dyn std::io::Write + Send>, anyfs_backend::FsError> { Ok(Box::new(std::io::sink())) }
 //! # }
 //! # impl FsDir for MyBackend {
 //! #     fn read_dir(&self, _: &std::path::Path) -> Result<ReadDirIter, anyfs_backend::FsError> { Ok(ReadDirIter::from_vec(vec![])) }
