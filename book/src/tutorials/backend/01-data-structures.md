@@ -248,21 +248,19 @@ The traits return `Metadata` structs. Add a conversion method:
 
 ```rust
 use anyfs_backend::Metadata;
+use std::time::SystemTime;
 
 impl FsNode {
-    fn to_metadata(&self, path: &Path) -> Metadata {
+    fn to_metadata(&self) -> Metadata {
         Metadata {
-            path: path.to_path_buf(),
             file_type: self.file_type,
-            len: self.content.len() as u64,
-            permissions: self.permissions.clone(),
-            created: Some(self.created),
-            modified: Some(self.modified),
-            accessed: Some(self.accessed),
-            inode: Some(self.inode),
-            uid: Some(1000),
-            gid: Some(1000),
-            nlink: Some(1),
+            size: self.content.len() as u64,
+            permissions: self.permissions,
+            created: self.created,
+            modified: self.modified,
+            accessed: self.accessed,
+            inode: self.inode,
+            nlink: 1,
         }
     }
 }

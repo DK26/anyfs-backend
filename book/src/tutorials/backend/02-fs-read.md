@@ -68,7 +68,7 @@ impl FsRead for TutorialFs {
         let node = inner.nodes.get(&path)
             .ok_or_else(|| FsError::NotFound { path: path.clone() })?;
 
-        Ok(node.to_metadata(&path))
+        Ok(node.to_metadata())
     }
 ```
 

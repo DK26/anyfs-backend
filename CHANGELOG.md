@@ -28,14 +28,14 @@ Initial pre-release of the AnyFS backend trait library.
 
 #### Core Traits
 - **`FsRead`** - Read operations: `read`, `read_to_string`, `read_range`, `exists`, `metadata`, `open_read`
-- **`FsWrite`** - Write operations: `write`, `append`, `create_dir`, `create_dir_all`, `remove_file`, `remove_dir`, `remove_dir_all`, `copy`, `rename`, `open_write`
-- **`FsDir`** - Directory operations: `read_dir` returning `ReadDirIter`
+- **`FsWrite`** - Write operations: `write`, `append`, `remove_file`, `rename`, `copy`, `truncate`, `open_write`
+- **`FsDir`** - Directory operations: `read_dir`, `create_dir`, `create_dir_all`, `remove_dir`, `remove_dir_all`
 - **`Fs`** - Composite trait combining `FsRead + FsWrite + FsDir`
 
 #### Extended Traits
 - **`FsLink`** - Symlink and hard link operations: `symlink`, `hard_link`, `read_link`, `symlink_metadata`
-- **`FsPermissions`** - Permission management: `set_permissions`, `set_owner`
-- **`FsSync`** - Durability guarantees: `sync`, `sync_path`
+- **`FsPermissions`** - Permission management: `set_permissions`
+- **`FsSync`** - Durability guarantees: `sync`, `fsync`
 - **`FsStats`** - Filesystem statistics: `statfs` returning `StatFs`
 - **`FsFull`** - Composite trait combining `Fs + FsLink + FsPermissions + FsSync + FsStats`
 

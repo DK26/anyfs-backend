@@ -83,13 +83,13 @@ Note the special error type `FsError::InodeNotFound`.
     fn metadata_by_inode(&self, inode: u64) -> Result<Metadata, FsError> {
         let inner = self.inner.read().unwrap();
 
-        let path = inner.inode_to_path.get(&inode)
+        let _path = inner.inode_to_path.get(&inode)
             .ok_or(FsError::InodeNotFound { inode })?;
 
-        let node = inner.nodes.get(path)
+        let node = inner.nodes.get(_path)
             .ok_or(FsError::InodeNotFound { inode })?;
 
-        Ok(node.to_metadata(path))
+        Ok(node.to_metadata())
     }
 ```
 

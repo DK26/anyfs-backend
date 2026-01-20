@@ -44,9 +44,9 @@ pub struct ReadOnlyFs<B> {
 }
 
 impl<B> Layer<B> for ReadOnlyLayer {
-    type Wrapped = ReadOnlyFs<B>;
+    type Backend = ReadOnlyFs<B>;
 
-    fn layer(self, inner: B) -> Self::Wrapped {
+    fn layer(self, inner: B) -> Self::Backend {
         ReadOnlyFs { inner }
     }
 }
@@ -57,23 +57,31 @@ impl<B: FsRead> FsRead for ReadOnlyFs<B> {
         self.inner.read(path)
     }
 
+    fn read_to_string(&self, path: &Path) -> Result<String, FsError> {
+        self.inner.read_to_string(path)
+    }
+
+    fn read_range(&self, path: &Path, offset: u64, len: usize) -> Result<Vec<u8>, FsError> {
+        self.inner.read_range(path, offset, len)
+    }
+
     fn metadata(&self, path: &Path) -> Result<Metadata, FsError> {
         self.inner.metadata(path)
     }
 
-    fn exists(&self, path: &Path) -> bool {
+    fn exists(&self, path: &Path) -> Result<bool, FsError> {
         self.inner.exists(path)
     }
 }
 
 // Block all writes
 impl<B: FsWrite> FsWrite for ReadOnlyFs<B> {
-    fn write(&self, path: &Path, _content: &[u8]) -> Result<(), FsError> {
-        Err(FsError::PermissionDenied { path: path.to_path_buf() })
+    fn write(&self, _path: &Path, _content: &[u8]) -> Result<(), FsError> {
+        Err(FsError::ReadOnly { operation: "write" })
     }
 
-    fn remove_file(&self, path: &Path) -> Result<(), FsError> {
-        Err(FsError::PermissionDenied { path: path.to_path_buf() })
+    fn remove_file(&self, _path: &Path) -> Result<(), FsError> {
+        Err(FsError::ReadOnly { operation: "remove_file" })
     }
 }
 
@@ -82,20 +90,20 @@ impl<B: FsDir> FsDir for ReadOnlyFs<B> {
         self.inner.read_dir(path)  // Reading is allowed
     }
 
-    fn create_dir(&self, path: &Path) -> Result<(), FsError> {
-        Err(FsError::PermissionDenied { path: path.to_path_buf() })
+    fn create_dir(&self, _path: &Path) -> Result<(), FsError> {
+        Err(FsError::ReadOnly { operation: "create_dir" })
     }
 
-    fn create_dir_all(&self, path: &Path) -> Result<(), FsError> {
-        Err(FsError::PermissionDenied { path: path.to_path_buf() })
+    fn create_dir_all(&self, _path: &Path) -> Result<(), FsError> {
+        Err(FsError::ReadOnly { operation: "create_dir_all" })
     }
 
-    fn remove_dir(&self, path: &Path) -> Result<(), FsError> {
-        Err(FsError::PermissionDenied { path: path.to_path_buf() })
+    fn remove_dir(&self, _path: &Path) -> Result<(), FsError> {
+        Err(FsError::ReadOnly { operation: "remove_dir" })
     }
 
-    fn remove_dir_all(&self, path: &Path) -> Result<(), FsError> {
-        Err(FsError::PermissionDenied { path: path.to_path_buf() })
+    fn remove_dir_all(&self, _path: &Path) -> Result<(), FsError> {
+        Err(FsError::ReadOnly { operation: "remove_dir_all" })
     }
 
     fn rename(&self, from: &Path, _to: &Path) -> Result<(), FsError> {

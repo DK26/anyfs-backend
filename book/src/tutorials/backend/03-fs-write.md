@@ -7,10 +7,25 @@
 ```rust
 pub trait FsWrite: Send + Sync {
     /// Write content to a file, creating it if it doesn't exist.
-    fn write(&self, path: &Path, content: &[u8]) -> Result<(), FsError>;
+    fn write(&self, path: &Path, data: &[u8]) -> Result<(), FsError>;
+
+    /// Append data to a file.
+    fn append(&self, path: &Path, data: &[u8]) -> Result<(), FsError>;
 
     /// Remove a file.
     fn remove_file(&self, path: &Path) -> Result<(), FsError>;
+
+    /// Rename/move a file or directory.
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError>;
+
+    /// Copy a file.
+    fn copy(&self, from: &Path, to: &Path) -> Result<(), FsError>;
+
+    /// Truncate a file to the specified size.
+    fn truncate(&self, path: &Path, size: u64) -> Result<(), FsError>;
+
+    /// Open a file for writing (returns boxed writer).
+    fn open_write(&self, path: &Path) -> Result<Box<dyn Write + Send>, FsError>;
 }
 ```
 
