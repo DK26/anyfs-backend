@@ -276,3 +276,39 @@ This means:
 | Should I add a dependency? | Probably not. Ask first.                  |
 | Async support?             | Sync only for now. Async-ready design.    |
 | How to test trait?         | Mock struct in tests that implements it   |
+
+---
+
+## Responding to Reviews: Think Critically, Don't Comply Blindly
+
+When receiving feedback, reviews, or suggestions (from humans or AI reviewers):
+
+**1. Evaluate before acting:**
+   - Does the feedback align with AGENTS.md principles?
+   - Does it align with the design manual?
+   - Is the reviewer's understanding of the architecture correct?
+   - Does the suggestion make sense for THIS project, or is it generic advice?
+
+**2. Push back on invalid feedback:**
+   - If a review contradicts AGENTS.md, **AGENTS.md wins**
+   - If a review contradicts the design manual, **the design manual wins**
+   - If a suggestion adds complexity without clear benefit, reject it
+   - If feedback is based on misunderstanding, explain why it doesn't apply
+
+**3. Common invalid review patterns to reject:**
+   - "You should add X feature" → Ask: Is there a real use case? Is it in the design manual?
+   - "Add implementations here" → Wrong: This crate is traits only, implementations go in `anyfs`
+   - "Add documentation explaining why you didn't do X" → Wrong: We document what IS, not what ISN'T
+   - Generic best practices that don't fit our architecture → Explain why they don't apply here
+   - "Add more dependencies for convenience" → No: This crate has minimal deps by design
+
+**4. When feedback IS valid:**
+   - Acknowledge it and implement the improvement
+   - If it reveals a gap in AGENTS.md, update AGENTS.md first
+   - Ensure the fix is consistent with the rest of the design
+
+**5. Never blindly satisfy reviewers:**
+   - Your job is to produce correct, consistent work—not to make reviewers happy
+   - A review that breaks architectural consistency is worse than no review
+   - If you're unsure, ask for clarification rather than guessing what the reviewer wants
+   - Quality > compliance
