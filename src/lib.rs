@@ -72,6 +72,36 @@
 //!
 //! ---
 //!
+//! ## Complete Trait Reference
+//!
+//! ### Component Traits (What You Implement)
+//!
+//! | Trait | Provides | Key Methods | When to Use |
+//! |-------|----------|-------------|-------------|
+//! | [`FsRead`] | Read operations | `read`, `exists`, `metadata` | Always (core) |
+//! | [`FsWrite`] | Write operations | `write`, `remove_file`, `rename` | Always (core) |
+//! | [`FsDir`] | Directory ops | `read_dir`, `create_dir` | Always (core) |
+//! | [`FsLink`] | Symlinks/hardlinks | `symlink`, `hard_link` | Backup tools |
+//! | [`FsPermissions`] | Permission mgmt | `set_permissions` | File managers |
+//! | [`FsSync`] | Disk sync | `sync`, `sync_path` | Databases |
+//! | [`FsStats`] | FS statistics | `statfs` | Disk monitoring |
+//! | [`FsInode`] | Inode ↔ path | `path_to_inode`, `lookup` | FUSE filesystems |
+//! | [`FsHandles`] | File handles | `open`, `read_at`, `write_at` | Random access |
+//! | [`FsLock`] | File locking | `lock`, `unlock` | Multi-process |
+//! | [`FsXattr`] | Extended attrs | `get_xattr`, `set_xattr` | Metadata storage |
+//! | [`FsPath`] | Path resolution | `canonicalize` | Symlink handling |
+//!
+//! ### Composite Traits (What You Use in Bounds)
+//!
+//! | Trait | Combines | Typical Consumer |
+//! |-------|----------|------------------|
+//! | [`Fs`] | `FsRead + FsWrite + FsDir` | Generic file code |
+//! | [`FsFull`] | `Fs + FsLink + FsPermissions + FsSync + FsStats` | File managers |
+//! | [`FsFuse`] | `FsFull + FsInode` | FUSE implementations |
+//! | [`FsPosix`] | `FsFuse + FsHandles + FsLock + FsXattr` | Databases, POSIX apps |
+//!
+//! ---
+//!
 //! ## Trait Hierarchy
 //!
 //! ```text

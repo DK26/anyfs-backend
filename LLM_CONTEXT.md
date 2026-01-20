@@ -98,6 +98,34 @@ FsFuse   = FsFull + FsInode
 FsPosix  = FsFuse + FsHandles + FsLock + FsXattr
 ```
 
+## Complete Trait Reference
+
+### Component Traits
+
+| Trait           | Provides              | Key Methods                                | When to Use                |
+| --------------- | --------------------- | ------------------------------------------ | -------------------------- |
+| `FsRead`        | Read operations       | `read`, `exists`, `metadata`, `open_read`  | Always (core)              |
+| `FsWrite`       | Write operations      | `write`, `append`, `remove_file`, `rename` | Always (core)              |
+| `FsDir`         | Directory operations  | `read_dir`, `create_dir`, `remove_dir_all` | Always (core)              |
+| `FsLink`        | Symbolic/hard links   | `symlink`, `hard_link`, `read_link`        | Backup tools               |
+| `FsPermissions` | Permission management | `set_permissions`                          | File managers              |
+| `FsSync`        | Force disk sync       | `sync`, `sync_path`                        | Databases                  |
+| `FsStats`       | Filesystem statistics | `statfs`                                   | Disk monitoring            |
+| `FsInode`       | Inode ↔ path mapping  | `path_to_inode`, `inode_to_path`, `lookup` | FUSE filesystems           |
+| `FsHandles`     | Open file handles     | `open`, `close`, `read_at`, `write_at`     | Random access              |
+| `FsLock`        | File locking          | `lock`, `unlock`, `try_lock`               | Multi-process coordination |
+| `FsXattr`       | Extended attributes   | `get_xattr`, `set_xattr`, `list_xattr`     | Metadata storage           |
+| `FsPath`        | Path canonicalization | `canonicalize`, `soft_canonicalize`        | Symlink resolution         |
+
+### Composite Traits
+
+| Trait     | Combines                                         | Use Case                        |
+| --------- | ------------------------------------------------ | ------------------------------- |
+| `Fs`      | `FsRead + FsWrite + FsDir`                       | 90% of apps                     |
+| `FsFull`  | `Fs + FsLink + FsPermissions + FsSync + FsStats` | File managers, backup tools     |
+| `FsFuse`  | `FsFull + FsInode`                               | FUSE implementations            |
+| `FsPosix` | `FsFuse + FsHandles + FsLock + FsXattr`          | Databases, POSIX-compliant apps |
+
 ## Trait Object Usage
 
 ```rust

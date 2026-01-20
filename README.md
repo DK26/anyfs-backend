@@ -178,6 +178,34 @@ Layer 4 (POSIX):    FsFuse + FsHandles + FsLock + FsXattr = FsPosix
 | **`FsFuse`**  | FUSE mounts, virtual drives                   | Userspace filesystems |
 | **`FsPosix`** | Databases, file locking, xattrs               | Full POSIX semantics  |
 
+### Complete Trait Reference
+
+#### Component Traits (What You Implement)
+
+| Trait           | Provides              | Key Methods                                    | When to Use                            |
+| --------------- | --------------------- | ---------------------------------------------- | -------------------------------------- |
+| `FsRead`        | Read operations       | `read`, `read_to_string`, `exists`, `metadata` | Always (core requirement)              |
+| `FsWrite`       | Write operations      | `write`, `append`, `remove_file`, `rename`     | Always (core requirement)              |
+| `FsDir`         | Directory operations  | `read_dir`, `create_dir`, `remove_dir_all`     | Always (core requirement)              |
+| `FsLink`        | Symbolic/hard links   | `symlink`, `hard_link`, `read_link`            | Backup tools, Unix-like behavior       |
+| `FsPermissions` | Permission management | `set_permissions`                              | File managers, security-aware apps     |
+| `FsSync`        | Force disk sync       | `sync`, `sync_path`                            | Databases, crash-safe writes           |
+| `FsStats`       | Filesystem statistics | `statfs`                                       | Disk space monitoring, quotas          |
+| `FsInode`       | Inode ↔ path mapping  | `path_to_inode`, `inode_to_path`, `lookup`     | FUSE filesystems                       |
+| `FsHandles`     | Open file handles     | `open`, `close`, `read_at`, `write_at`         | Random access, concurrent file access  |
+| `FsLock`        | File locking          | `lock`, `unlock`, `try_lock`                   | Multi-process coordination, databases  |
+| `FsXattr`       | Extended attributes   | `get_xattr`, `set_xattr`, `list_xattr`         | Metadata storage, macOS/Linux features |
+| `FsPath`        | Path canonicalization | `canonicalize`, `soft_canonicalize`            | Symlink resolution, path normalization |
+
+#### Composite Traits (What You Use in Bounds)
+
+| Trait     | Combines                                         | Typical Consumer                        |
+| --------- | ------------------------------------------------ | --------------------------------------- |
+| `Fs`      | `FsRead + FsWrite + FsDir`                       | Generic file processing code            |
+| `FsFull`  | `Fs + FsLink + FsPermissions + FsSync + FsStats` | File managers, backup/restore tools     |
+| `FsFuse`  | `FsFull + FsInode`                               | FUSE filesystem implementations         |
+| `FsPosix` | `FsFuse + FsHandles + FsLock + FsXattr`          | Databases, POSIX-compliant applications |
+
 ### Blanket Implementations
 
 All composite traits have **blanket implementations**. Just implement the component traits and you get the composite for free:
