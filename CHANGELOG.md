@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-pre.2] - 2026-01-20
+
+### Added
+- **Complete trait reference tables** in README.md and crate documentation for quick lookup of all 12 component traits and 4 composite traits
+- **Comprehensive mdbook documentation** with organized book structure and enhanced HTML output
+- **GitHub Pages integration** - User Guide now available at https://dk26.github.io/anyfs-backend/
+
+### Changed
+- **Documentation structure** - Reorganized book source (`/book/src`) with build output to `/docs` for GitHub Pages
+- **User Guide links** - Added prominent links to both User Guide and Design Manual in README.md
+- **mdbook configuration** - Enhanced with smart punctuation, code playground, fold sections, and search
+- **Edit URL template** - Updated to point to correct source location
+
 ## [0.1.0-pre.1] - 2026-01-19
 
 Initial pre-release of the AnyFS backend trait library.

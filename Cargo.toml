@@ -1,6 +1,6 @@
 [package]
 name = "anyfs-backend"
-version = "0.1.0-pre.1"
+version = "0.1.0-pre.2"
 edition = "2021"
 description = "Core traits and types for the AnyFS pluggable virtual filesystem standard"
 license = "MIT OR Apache-2.0"
