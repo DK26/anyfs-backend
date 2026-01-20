@@ -9,6 +9,8 @@ Core traits and types for the **AnyFS pluggable virtual filesystem standard**.
 
 This crate defines the trait hierarchy that filesystem backends implement. It contains **only trait definitions and types** — no concrete implementations. For backends, see the [`anyfs`](https://crates.io/crates/anyfs) crate.
 
+📖 **[User Guide](https://dk26.github.io/anyfs-backend/)** · 📐 **[Design Manual](https://dk26.github.io/anyfs-design-manual/)**
+
 ---
 
 ## Quick Start
