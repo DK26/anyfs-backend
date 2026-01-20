@@ -32,10 +32,12 @@ Each chapter introduces one or more traits:
 
 ## Running the Examples
 
-Each chapter has runnable example code. Clone the repository and run:
+Each chapter has example code snippets. For runnable examples, check the `examples/` directory:
 
 ```bash
-cargo run --example tutorial_backend_complete
+cargo run --example inmemory_fs
+cargo run --example basic_usage
+cargo run --example layer_middleware
 ```
 
 ## The End Result

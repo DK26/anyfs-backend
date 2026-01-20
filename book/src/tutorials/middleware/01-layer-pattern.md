@@ -7,15 +7,15 @@ The Layer pattern allows you to wrap a backend with additional behavior without 
 ```rust
 pub trait Layer<B> {
     /// The resulting wrapped type.
-    type Wrapped;
+    type Backend;
 
     /// Wrap the backend, producing a new type.
-    fn layer(self, inner: B) -> Self::Wrapped;
+    fn layer(self, inner: B) -> Self::Backend;
 }
 ```
 
 - `B`: The inner backend type being wrapped
-- `Wrapped`: The resulting wrapped type (must implement same traits)
+- `Backend`: The resulting wrapped type (must implement same traits)
 - `layer()`: Consumes the layer config and backend, produces wrapped backend
 
 ## Basic Structure

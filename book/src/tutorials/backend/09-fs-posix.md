@@ -22,27 +22,35 @@ pub trait FsHandles: Send + Sync {
     /// Open a file and return a handle.
     fn open(&self, path: &Path, flags: OpenFlags) -> Result<Handle, FsError>;
 
+    /// Read from a file at a specific offset into a buffer.
+    fn read_at(&self, handle: Handle, buf: &mut [u8], offset: u64) -> Result<usize, FsError>;
+
+    /// Write data to a file at a specific offset.
+    fn write_at(&self, handle: Handle, data: &[u8], offset: u64) -> Result<usize, FsError>;
+
     /// Close a file handle.
     fn close(&self, handle: Handle) -> Result<(), FsError>;
-
-    /// Read from a file at a specific offset.
-    fn read_at(&self, handle: Handle, offset: u64, len: usize) -> Result<Vec<u8>, FsError>;
-
-    /// Write to a file at a specific offset.
-    fn write_at(&self, handle: Handle, offset: u64, data: &[u8]) -> Result<usize, FsError>;
 }
 ```
 
 #### OpenFlags
 
 ```rust
-bitflags! {
-    pub struct OpenFlags: u32 {
-        const READ = 0b0001;
-        const WRITE = 0b0010;
-        const CREATE = 0b0100;
-        const TRUNCATE = 0b1000;
-    }
+/// File open flags (struct, not bitflags).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct OpenFlags {
+    pub read: bool,
+    pub write: bool,
+    pub create: bool,
+    pub truncate: bool,
+    pub append: bool,
+}
+
+impl OpenFlags {
+    pub const READ: Self = Self { read: true, write: false, create: false, truncate: false, append: false };
+    pub const WRITE: Self = Self { read: false, write: true, create: true, truncate: true, append: false };
+    pub const READ_WRITE: Self = Self { read: true, write: true, create: false, truncate: false, append: false };
+    pub const APPEND: Self = Self { read: false, write: true, create: true, truncate: false, append: true };
 }
 ```
 
@@ -57,7 +65,7 @@ impl FsHandles for TutorialFs {
         let exists = inner.nodes.contains_key(&path);
 
         // Handle creation
-        if flags.contains(OpenFlags::CREATE) && !exists {
+        if flags.create && !exists {
             let inode = Self::alloc_inode(&mut inner);
             let node = FsNode::new_file(Vec::new(), inode);
             inner.inode_to_path.insert(inode, path.clone());
@@ -67,7 +75,7 @@ impl FsHandles for TutorialFs {
         }
 
         // Truncate if requested
-        if flags.contains(OpenFlags::TRUNCATE) {
+        if flags.truncate {
             if let Some(node) = inner.nodes.get_mut(&path) {
                 node.content.clear();
             }
@@ -84,24 +92,18 @@ impl FsHandles for TutorialFs {
         Ok(handle)
     }
 
-    fn close(&self, handle: Handle) -> Result<(), FsError> {
-        let mut inner = self.inner.write().unwrap();
-        
-        inner.handles.remove(&handle)
-            .ok_or(FsError::InvalidHandle { handle })?;
-        
-        Ok(())
-    }
-
-    fn read_at(&self, handle: Handle, offset: u64, len: usize) -> Result<Vec<u8>, FsError> {
+    fn read_at(&self, handle: Handle, buf: &mut [u8], offset: u64) -> Result<usize, FsError> {
         let inner = self.inner.read().unwrap();
 
         let state = inner.handles.get(&handle)
             .ok_or(FsError::InvalidHandle { handle })?;
 
         // Check read permission
-        if !state.flags.contains(OpenFlags::READ) {
-            return Err(FsError::PermissionDenied { path: state.path.clone() });
+        if !state.flags.read {
+            return Err(FsError::PermissionDenied { 
+                path: state.path.clone(),
+                operation: "read_at"
+            });
         }
 
         let node = inner.nodes.get(&state.path)
@@ -109,14 +111,16 @@ impl FsHandles for TutorialFs {
 
         let start = offset as usize;
         if start >= node.content.len() {
-            return Ok(Vec::new());  // EOF
+            return Ok(0);  // EOF
         }
 
-        let end = (start + len).min(node.content.len());
-        Ok(node.content[start..end].to_vec())
+        let available = node.content.len() - start;
+        let to_read = buf.len().min(available);
+        buf[..to_read].copy_from_slice(&node.content[start..start + to_read]);
+        Ok(to_read)
     }
 
-    fn write_at(&self, handle: Handle, offset: u64, data: &[u8]) -> Result<usize, FsError> {
+    fn write_at(&self, handle: Handle, data: &[u8], offset: u64) -> Result<usize, FsError> {
         let mut inner = self.inner.write().unwrap();
 
         // Get path from handle

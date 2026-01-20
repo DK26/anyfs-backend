@@ -13,40 +13,34 @@ let meta = fs.metadata(path)?;
 
 // Check type
 if meta.is_file() {
-    println!("Size: {} bytes", meta.len());
+    println!("Size: {} bytes", meta.size);
 } else if meta.is_dir() {
     println!("Directory");
 } else if meta.is_symlink() {
     println!("Symlink");
 }
 
-// Timestamps (optional - may be None for some backends)
-if let Some(created) = meta.created() {
-    println!("Created: {:?}", created);
-}
-if let Some(modified) = meta.modified() {
-    println!("Modified: {:?}", modified);
-}
-if let Some(accessed) = meta.accessed() {
-    println!("Accessed: {:?}", accessed);
-}
+// Timestamps (concrete values)
+println!("Created: {:?}", meta.created);
+println!("Modified: {:?}", meta.modified);
+println!("Accessed: {:?}", meta.accessed);
 
-// Permissions (if available)
-if let Some(perms) = meta.permissions() {
-    println!("Readonly: {}", perms.readonly());
-}
+// Permissions
+println!("Readonly: {}", meta.permissions.readonly());
 ```
 
 ### Metadata Fields
 
-| Field         | Type                  | Description                       |
-| ------------- | --------------------- | --------------------------------- |
-| `file_type`   | `FileType`            | File, directory, or symlink       |
-| `len`         | `u64`                 | Size in bytes (0 for directories) |
-| `created`     | `Option<SystemTime>`  | Creation time                     |
-| `modified`    | `Option<SystemTime>`  | Last modification                 |
-| `accessed`    | `Option<SystemTime>`  | Last access                       |
-| `permissions` | `Option<Permissions>` | Permission info                   |
+| Field         | Type          | Description                       |
+| ------------- | ------------- | --------------------------------- |
+| `file_type`   | `FileType`    | File, Directory, or Symlink       |
+| `size`        | `u64`         | Size in bytes (0 for directories) |
+| `permissions` | `Permissions` | Permission bits                   |
+| `created`     | `SystemTime`  | Creation time                     |
+| `modified`    | `SystemTime`  | Last modification                 |
+| `accessed`    | `SystemTime`  | Last access                       |
+| `inode`       | `u64`         | Inode number                      |
+| `nlink`       | `u64`         | Hard link count                   |
 
 ### Creating Metadata
 
@@ -56,19 +50,12 @@ For backend implementations:
 use anyfs_backend::{Metadata, FileType, Permissions};
 use std::time::SystemTime;
 
-// File metadata
-let meta = Metadata::file(1024)
-    .with_created(SystemTime::now())
-    .with_modified(SystemTime::now())
-    .with_permissions(Permissions::readonly(false));
-
-// Directory metadata
-let meta = Metadata::dir()
-    .with_modified(SystemTime::now());
-
-// Symlink metadata
-let meta = Metadata::symlink()
-    .with_modified(SystemTime::now());
+// Use Default and modify fields
+let mut meta = Metadata::default();
+meta.file_type = FileType::File;
+meta.size = 1024;
+meta.permissions = Permissions::from_mode(0o644);
+meta.modified = SystemTime::now();
 ```
 
 ## FileType
@@ -78,18 +65,18 @@ Enumeration of filesystem entry types:
 ```rust
 use anyfs_backend::FileType;
 
-let ft = metadata.file_type();
+let ft = meta.file_type;
 
 match ft {
     FileType::File => println!("Regular file"),
-    FileType::Dir => println!("Directory"),
+    FileType::Directory => println!("Directory"),
     FileType::Symlink => println!("Symbolic link"),
 }
 
-// Convenience methods
-assert!(FileType::File.is_file());
-assert!(FileType::Dir.is_dir());
-assert!(FileType::Symlink.is_symlink());
+// Metadata convenience methods
+assert!(meta.is_file());
+assert!(meta.is_dir());
+assert!(meta.is_symlink());
 ```
 
 ## DirEntry
@@ -102,207 +89,135 @@ use anyfs_backend::DirEntry;
 for entry in fs.read_dir(path)? {
     let entry = entry?;
     
-    // Name of the entry (not full path)
-    println!("Name: {}", entry.name());
+    // Name of the entry (filename only)
+    println!("Name: {}", entry.name);
     
     // Full path
-    println!("Path: {}", entry.path().display());
+    println!("Path: {}", entry.path.display());
     
-    // Type (if available without extra syscall)
-    if let Some(ft) = entry.file_type() {
-        println!("Type: {:?}", ft);
-    }
+    // Type
+    println!("Type: {:?}", entry.file_type);
     
-    // Full metadata (may require extra syscall)
-    let meta = entry.metadata()?;
-    println!("Size: {}", meta.len());
+    // Size
+    println!("Size: {} bytes", entry.size);
 }
 ```
 
 ### DirEntry Fields
 
-| Method        | Return Type                 | Description           |
-| ------------- | --------------------------- | --------------------- |
-| `name()`      | `&str`                      | Entry name (not path) |
-| `path()`      | `&Path`                     | Full path             |
-| `file_type()` | `Option<FileType>`          | Type if known cheaply |
-| `metadata()`  | `Result<Metadata, FsError>` | Full metadata         |
+| Field       | Type       | Description              |
+| ----------- | ---------- | ------------------------ |
+| `name`      | `String`   | Entry name (not path)    |
+| `path`      | `PathBuf`  | Full path                |
+| `file_type` | `FileType` | File, Directory, Symlink |
+| `size`      | `u64`      | Size in bytes            |
+| `inode`     | `u64`      | Inode number             |
 
 ## Permissions
 
-File permission information:
+Unix-style permission bits:
 
 ```rust
 use anyfs_backend::Permissions;
 
-// Create permissions
-let perms = Permissions::readonly(false);  // read-write
-let perms = Permissions::readonly(true);   // read-only
+// Create from mode bits
+let perms = Permissions::from_mode(0o644);  // rw-r--r--
+let perms = Permissions::from_mode(0o755);  // rwxr-xr-x
 
-// Check permissions
+// Check if readonly
 if perms.readonly() {
-    println!("File is read-only");
+    println!("File is read-only (no write bits set)");
 }
 
-// POSIX mode (if supported)
-#[cfg(unix)]
-{
-    let perms = Permissions::from_mode(0o755);
-    println!("Mode: {:o}", perms.mode());
-}
+// Get the mode value
+println!("Mode: {:o}", perms.mode());
+
+// Default permissions
+let file_perms = Permissions::default_file();  // 0o644
+let dir_perms = Permissions::default_dir();    // 0o755
 ```
 
-### Extended Permissions (Unix)
+### Permissions Methods
 
-For backends that support POSIX permissions:
+| Method           | Return Type   | Description                     |
+| ---------------- | ------------- | ------------------------------- |
+| `from_mode(u32)` | `Permissions` | Create from Unix mode bits      |
+| `mode()`         | `u32`         | Get the raw mode value          |
+| `readonly()`     | `bool`        | True if no write bits set       |
+| `default_file()` | `Permissions` | Default file perms (0o644)      |
+| `default_dir()`  | `Permissions` | Default directory perms (0o755) |
+
+## OpenFlags
+
+Flags for opening files with handle-based APIs (FsHandles):
 
 ```rust
-use anyfs_backend::Permissions;
+use anyfs_backend::OpenFlags;
 
-// From mode bits
-let perms = Permissions::from_mode(0o644);
+// Use predefined constants
+let flags = OpenFlags::READ;       // Read only
+let flags = OpenFlags::WRITE;      // Write + create + truncate
+let flags = OpenFlags::READ_WRITE; // Read and write
+let flags = OpenFlags::APPEND;     // Append mode
 
-// Check mode
-let mode = perms.mode();  // 0o644
-
-// Permission bits
-let owner_read = (mode & 0o400) != 0;
-let owner_write = (mode & 0o200) != 0;
-let owner_exec = (mode & 0o100) != 0;
+// Or construct manually
+let flags = OpenFlags {
+    read: true,
+    write: true,
+    create: true,
+    truncate: false,
+    append: false,
+};
 ```
 
-## OpenOptions
+### OpenFlags Fields
 
-Options for opening files:
+| Field      | Type   | Description             |
+| ---------- | ------ | ----------------------- |
+| `read`     | `bool` | Open for reading        |
+| `write`    | `bool` | Open for writing        |
+| `create`   | `bool` | Create if missing       |
+| `truncate` | `bool` | Truncate to zero length |
+| `append`   | `bool` | Append to end           |
 
-```rust
-use anyfs_backend::OpenOptions;
+## StatFs
 
-// Read only (default)
-let opts = OpenOptions::new().read(true);
-
-// Write, create if missing
-let opts = OpenOptions::new()
-    .write(true)
-    .create(true);
-
-// Append mode
-let opts = OpenOptions::new()
-    .append(true)
-    .create(true);
-
-// Create new (fail if exists)
-let opts = OpenOptions::new()
-    .write(true)
-    .create_new(true);
-
-// Truncate existing
-let opts = OpenOptions::new()
-    .write(true)
-    .truncate(true);
-```
-
-### OpenOptions Fields
-
-| Method             | Default | Description             |
-| ------------------ | ------- | ----------------------- |
-| `read(bool)`       | `true`  | Open for reading        |
-| `write(bool)`      | `false` | Open for writing        |
-| `append(bool)`     | `false` | Append to end           |
-| `create(bool)`     | `false` | Create if missing       |
-| `create_new(bool)` | `false` | Create, fail if exists  |
-| `truncate(bool)`   | `false` | Truncate to zero length |
-
-## SeekFrom
-
-Position for seeking within files:
+Filesystem statistics (from FsStats trait):
 
 ```rust
-use std::io::SeekFrom;
+use anyfs_backend::StatFs;
 
-// From start of file
-let pos = SeekFrom::Start(100);
-
-// From end of file (negative offset)
-let pos = SeekFrom::End(-50);
-
-// From current position
-let pos = SeekFrom::Current(25);
-```
-
-Used with file handles:
-
-```rust
-use std::io::{Read, Seek, SeekFrom};
-
-let mut handle = fs.open_read(path)?;
-
-// Jump to offset 100
-handle.seek(SeekFrom::Start(100))?;
-
-// Read from there
-let mut buf = [0u8; 50];
-handle.read(&mut buf)?;
-```
-
-## FileTimes
-
-For setting file timestamps:
-
-```rust
-use anyfs_backend::FileTimes;
-use std::time::SystemTime;
-
-let times = FileTimes::new()
-    .set_accessed(SystemTime::now())
-    .set_modified(SystemTime::now());
-
-fs.set_times(path, times)?;
-```
-
-## FsStats
-
-Filesystem statistics (capacity, usage):
-
-```rust
-use anyfs_backend::FsStats;
-
-let stats: FsStats = fs.stats()?;
+let stats: StatFs = fs.statfs()?;
 
 println!("Total: {} bytes", stats.total_bytes);
-println!("Free: {} bytes", stats.free_bytes);
 println!("Available: {} bytes", stats.available_bytes);
-println!("Used: {}%", 
-    (stats.total_bytes - stats.available_bytes) * 100 / stats.total_bytes
-);
+println!("Used: {} bytes", stats.used_bytes);
 ```
 
-### FsStats Fields
+### StatFs Fields
 
-| Field             | Type          | Description           |
-| ----------------- | ------------- | --------------------- |
-| `total_bytes`     | `u64`         | Total capacity        |
-| `free_bytes`      | `u64`         | Free space            |
-| `available_bytes` | `u64`         | Available to non-root |
-| `total_inodes`    | `Option<u64>` | Total inodes (Unix)   |
-| `free_inodes`     | `Option<u64>` | Free inodes (Unix)    |
+| Field             | Type  | Description     |
+| ----------------- | ----- | --------------- |
+| `total_bytes`     | `u64` | Total capacity  |
+| `available_bytes` | `u64` | Available space |
+| `used_bytes`      | `u64` | Used space      |
 
-## InodeId
+## Handle
 
-Unique identifier for files (used by FsInode trait):
+Opaque file handle for POSIX-style APIs (FsHandles):
 
 ```rust
-use anyfs_backend::InodeId;
+use anyfs_backend::Handle;
 
-let inode = fs.inode(path)?;
-println!("Inode: {}", inode);
+// Open a file
+let handle = fs.open(path, OpenFlags::READ)?;
 
-// Compare inodes to check if same file
-let inode1 = fs.inode(path1)?;
-let inode2 = fs.inode(path2)?;
-if inode1 == inode2 {
-    println!("Same file (hard links)");
-}
+// Read/write with handle
+let mut buf = [0u8; 1024];
+let bytes_read = fs.read_at(handle, &mut buf, 0)?;
+
+// Close when done
+fs.close(handle)?;
 ```
 
 ## Summary
@@ -310,11 +225,10 @@ if inode1 == inode2 {
 | Type          | Purpose                                  |
 | ------------- | ---------------------------------------- |
 | `Metadata`    | File/directory attributes                |
-| `FileType`    | File, Dir, or Symlink                    |
+| `FileType`    | File, Directory, or Symlink              |
 | `DirEntry`    | Directory listing entry                  |
-| `Permissions` | Access permissions                       |
-| `OpenOptions` | File open configuration                  |
-| `FileTimes`   | Timestamp modification                   |
-| `FsStats`     | Filesystem capacity                      |
-| `InodeId`     | Unique file identifier                   |
+| `Permissions` | Unix permission bits                     |
+| `OpenFlags`   | File open configuration (for FsHandles)  |
+| `StatFs`      | Filesystem capacity (from FsStats)       |
+| `Handle`      | Opaque file handle (for FsHandles)       |
 | `FsError`     | Error handling (see [Errors](errors.md)) |

@@ -18,41 +18,26 @@ Like `Fs`, it's **automatically implemented** via blanket impl.
 ```rust
 pub trait FsPermissions: Send + Sync {
     /// Set file/directory permissions.
-    fn set_permissions(&self, path: &Path, permissions: Permissions) -> Result<(), FsError>;
-
-    /// Set owner UID and/or GID.
-    fn set_owner(&self, path: &Path, uid: Option<u32>, gid: Option<u32>) -> Result<(), FsError>;
+    fn set_permissions(&self, path: &Path, perm: Permissions) -> Result<(), FsError>;
 }
 ```
+
+> **Note:** Reading permissions is done via `FsRead::metadata()`. This trait only provides the ability to set permissions.
 
 Implementation:
 
 ```rust
 impl FsPermissions for TutorialFs {
-    fn set_permissions(&self, path: &Path, permissions: Permissions) -> Result<(), FsError> {
+    fn set_permissions(&self, path: &Path, perm: Permissions) -> Result<(), FsError> {
         let path = Self::normalize_path(path);
         let mut inner = self.inner.write().unwrap();
 
         let node = inner.nodes.get_mut(&path)
             .ok_or_else(|| FsError::NotFound { path: path.clone() })?;
 
-        node.permissions = permissions;
+        node.permissions = perm;
         node.modified = SystemTime::now();
 
-        Ok(())
-    }
-
-    fn set_owner(&self, path: &Path, uid: Option<u32>, gid: Option<u32>) -> Result<(), FsError> {
-        let path = Self::normalize_path(path);
-        let inner = self.inner.read().unwrap();
-
-        // Verify path exists
-        if !inner.nodes.contains_key(&path) {
-            return Err(FsError::NotFound { path });
-        }
-
-        // In-memory fs: we don't actually store uid/gid changes
-        // A real implementation would update the node
         Ok(())
     }
 }
@@ -62,11 +47,11 @@ impl FsPermissions for TutorialFs {
 
 ```rust
 pub trait FsSync: Send + Sync {
-    /// Flush pending writes for a specific file.
-    fn sync(&self, path: &Path) -> Result<(), FsError>;
+    /// Sync all pending changes to persistent storage.
+    fn sync(&self) -> Result<(), FsError>;
 
-    /// Flush all pending writes.
-    fn sync_all(&self) -> Result<(), FsError>;
+    /// Sync a specific file's data and metadata to storage.
+    fn fsync(&self, path: &Path) -> Result<(), FsError>;
 }
 ```
 
@@ -74,7 +59,12 @@ Implementation:
 
 ```rust
 impl FsSync for TutorialFs {
-    fn sync(&self, path: &Path) -> Result<(), FsError> {
+    fn sync(&self) -> Result<(), FsError> {
+        // In-memory: nothing to sync
+        Ok(())
+    }
+
+    fn fsync(&self, path: &Path) -> Result<(), FsError> {
         let path = Self::normalize_path(path);
         let inner = self.inner.read().unwrap();
 
@@ -83,11 +73,6 @@ impl FsSync for TutorialFs {
             return Err(FsError::NotFound { path });
         }
 
-        // In-memory: nothing to sync
-        Ok(())
-    }
-
-    fn sync_all(&self) -> Result<(), FsError> {
         // In-memory: nothing to sync
         Ok(())
     }

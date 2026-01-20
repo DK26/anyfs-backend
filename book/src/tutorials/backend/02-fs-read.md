@@ -9,11 +9,20 @@ pub trait FsRead: Send + Sync {
     /// Read the entire contents of a file.
     fn read(&self, path: &Path) -> Result<Vec<u8>, FsError>;
 
+    /// Read file as UTF-8 string.
+    fn read_to_string(&self, path: &Path) -> Result<String, FsError>;
+
+    /// Read a range of bytes from a file.
+    fn read_range(&self, path: &Path, offset: u64, len: usize) -> Result<Vec<u8>, FsError>;
+
+    /// Check if a path exists.
+    fn exists(&self, path: &Path) -> Result<bool, FsError>;
+
     /// Get metadata (size, type, timestamps, etc.).
     fn metadata(&self, path: &Path) -> Result<Metadata, FsError>;
 
-    /// Check if a path exists.
-    fn exists(&self, path: &Path) -> bool;
+    /// Open a file for reading (returns boxed reader).
+    fn open_read(&self, path: &Path) -> Result<Box<dyn Read + Send>, FsError>;
 }
 ```
 
@@ -65,31 +74,28 @@ impl FsRead for TutorialFs {
 
 The `Metadata` struct contains:
 
-| Field         | Type                 | Description                 |
-| ------------- | -------------------- | --------------------------- |
-| `path`        | `PathBuf`            | The queried path            |
-| `file_type`   | `FileType`           | File, Directory, or Symlink |
-| `len`         | `u64`                | Size in bytes               |
-| `permissions` | `Permissions`        | Permission bits             |
-| `created`     | `Option<SystemTime>` | Creation time               |
-| `modified`    | `Option<SystemTime>` | Last modification           |
-| `accessed`    | `Option<SystemTime>` | Last access                 |
-| `inode`       | `Option<u64>`        | Inode number                |
-| `uid`         | `Option<u32>`        | Owner user ID               |
-| `gid`         | `Option<u32>`        | Owner group ID              |
-| `nlink`       | `Option<u32>`        | Hard link count             |
+| Field         | Type          | Description                 |
+| ------------- | ------------- | --------------------------- |
+| `file_type`   | `FileType`    | File, Directory, or Symlink |
+| `size`        | `u64`         | Size in bytes               |
+| `permissions` | `Permissions` | Permission bits             |
+| `created`     | `SystemTime`  | Creation time               |
+| `modified`    | `SystemTime`  | Last modification           |
+| `accessed`    | `SystemTime`  | Last access                 |
+| `inode`       | `u64`         | Inode number                |
+| `nlink`       | `u64`         | Hard link count             |
 
 ### `exists` - Check Path Existence
 
 ```rust
-    fn exists(&self, path: &Path) -> bool {
+    fn exists(&self, path: &Path) -> Result<bool, FsError> {
         let path = Self::normalize_path(path);
         let inner = self.inner.read().unwrap();
-        inner.nodes.contains_key(&path)
+        Ok(inner.nodes.contains_key(&path))
     }
 ```
 
-**Important:** `exists` never fails. It returns `false` for any error condition.
+**Important:** Returns `Ok(true)` if path exists, `Ok(false)` if not. Only returns `Err` for unexpected I/O failures.
 
 ## Error Handling Guidelines
 
@@ -142,8 +148,8 @@ fn test_read_directory_fails() {
 fn test_exists() {
     let fs = TutorialFs::new();
     
-    assert!(fs.exists(Path::new("/")));  // Root always exists
-    assert!(!fs.exists(Path::new("/nonexistent")));
+    assert!(fs.exists(Path::new("/")).unwrap());  // Root always exists
+    assert!(!fs.exists(Path::new("/nonexistent")).unwrap());
 }
 ```
 

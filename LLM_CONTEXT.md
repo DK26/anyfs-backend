@@ -109,7 +109,7 @@ FsPosix  = FsFuse + FsHandles + FsLock + FsXattr
 | `FsDir`         | Directory operations  | `read_dir`, `create_dir`, `remove_dir_all` | Always (core)              |
 | `FsLink`        | Symbolic/hard links   | `symlink`, `hard_link`, `read_link`        | Backup tools               |
 | `FsPermissions` | Permission management | `set_permissions`                          | File managers              |
-| `FsSync`        | Force disk sync       | `sync`, `sync_path`                        | Databases                  |
+| `FsSync`        | Force disk sync       | `sync`, `fsync`                            | Databases                  |
 | `FsStats`       | Filesystem statistics | `statfs`                                   | Disk monitoring            |
 | `FsInode`       | Inode ↔ path mapping  | `path_to_inode`, `inode_to_path`, `lookup` | FUSE filesystems           |
 | `FsHandles`     | Open file handles     | `open`, `close`, `read_at`, `write_at`     | Random access              |
@@ -502,9 +502,10 @@ fn posix_ops<B: FsPosix>(fs: &B) -> Result<(), FsError> {
     // Open file handle
     let handle: Handle = fs.open(Path::new("/file.txt"), OpenFlags::READ)?;
     
-    // Read/write via handle
-    let data = fs.read_handle(handle, 0, 1024)?;
-    fs.write_handle(handle, 0, b"data")?;
+    // Read/write via handle (buffer-based API)
+    let mut buf = [0u8; 1024];
+    let bytes_read = fs.read_at(handle, &mut buf, 0)?;  // read at offset 0
+    let bytes_written = fs.write_at(handle, b"data", 0)?;  // write at offset 0
     
     // File locking
     fs.lock(handle, LockType::Exclusive)?;

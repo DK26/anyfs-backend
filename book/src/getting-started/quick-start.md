@@ -59,16 +59,15 @@ impl FsRead for SimpleFs {
             .ok_or_else(|| FsError::NotFound { path: path.to_path_buf() })?;
         
         Ok(Metadata {
-            path: path.to_path_buf(),
             file_type: FileType::File,
-            len: content.len() as u64,
+            size: content.len() as u64,
             permissions: Permissions::default(),
             ..Default::default()
         })
     }
 
-    fn exists(&self, path: &Path) -> bool {
-        self.files.read().unwrap().contains_key(path)
+    fn exists(&self, path: &Path) -> Result<bool, FsError> {
+        Ok(self.files.read().unwrap().contains_key(path))
     }
 }
 

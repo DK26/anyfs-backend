@@ -8,12 +8,12 @@ The core error type used by all traits:
 
 ```rust
 use anyfs_backend::FsError;
-use std::path::Path;
+use std::path::PathBuf;
 
 fn handle_error(e: FsError) {
     match e {
-        FsError::NotFound { path, operation } => {
-            println!("{} not found during {}", path.display(), operation);
+        FsError::NotFound { path } => {
+            println!("{} not found", path.display());
         }
         FsError::AlreadyExists { path, operation } => {
             println!("{} already exists during {}", path.display(), operation);
@@ -23,153 +23,155 @@ fn handle_error(e: FsError) {
         }
         FsError::Io { source, path, operation } => {
             println!("IO error on {}: {} during {}", 
-                path.map(|p| p.display().to_string()).unwrap_or_default(),
-                source, operation);
+                path.display(), source, operation);
         }
         // ... handle other variants
+        _ => println!("Other error: {}", e),
     }
 }
 ```
 
 ## Error Variants
 
-| Variant             | When Used                       | Required Fields                          |
-| ------------------- | ------------------------------- | ---------------------------------------- |
-| `NotFound`          | File or directory doesn't exist | `path`, `operation`                      |
-| `AlreadyExists`     | Creating something that exists  | `path`, `operation`                      |
-| `PermissionDenied`  | Access not allowed              | `path`, `operation`                      |
-| `IsDirectory`       | Expected file, got directory    | `path`, `operation`                      |
-| `NotDirectory`      | Expected directory, got file    | `path`, `operation`                      |
-| `DirectoryNotEmpty` | Removing non-empty directory    | `path`, `operation`                      |
-| `InvalidPath`       | Malformed path                  | `path`, `operation`, `reason`            |
-| `TooManySymlinks`   | Symlink loop detected           | `path`, `operation`                      |
-| `ReadOnly`          | Write on read-only filesystem   | `path`, `operation`                      |
-| `CrossDevice`       | Cross-filesystem operation      | `source`, `destination`, `operation`     |
-| `Io`                | General I/O error               | `source`, `path` (optional), `operation` |
-| `Other`             | Unclassified errors             | `message`, `operation`                   |
+| Variant             | When Used                       | Fields                        |
+| ------------------- | ------------------------------- | ----------------------------- |
+| `NotFound`          | File or directory doesn't exist | `path`                        |
+| `AlreadyExists`     | Creating something that exists  | `path`, `operation`           |
+| `PermissionDenied`  | Access not allowed              | `path`, `operation`           |
+| `NotAFile`          | Expected file, got directory    | `path`                        |
+| `NotADirectory`     | Expected directory, got file    | `path`                        |
+| `DirectoryNotEmpty` | Removing non-empty directory    | `path`                        |
+| `InvalidPath`       | Malformed path                  | `path`, `reason`              |
+| `SymlinkLoop`       | Symlink loop detected           | `path`                        |
+| `ReadOnly`          | Write on read-only filesystem   | `operation`                   |
+| `ThreatDetected`    | Security threat detected        | `path`, `reason`              |
+| `InvalidHandle`     | Invalid file handle             | `handle`                      |
+| `Io`                | General I/O error               | `operation`, `path`, `source` |
 
 ## Creating Errors
 
-Use the constructor methods for clean error creation:
+Create errors directly with struct syntax:
 
 ```rust
 use anyfs_backend::FsError;
-use std::path::Path;
+use std::path::PathBuf;
 
 // NotFound
-let err = FsError::not_found(Path::new("/missing.txt"), "read");
+let err = FsError::NotFound { 
+    path: PathBuf::from("/missing.txt") 
+};
 
 // AlreadyExists
-let err = FsError::already_exists(Path::new("/exists"), "create_dir");
+let err = FsError::AlreadyExists { 
+    path: PathBuf::from("/exists"),
+    operation: "create_dir"
+};
 
 // PermissionDenied
-let err = FsError::permission_denied(Path::new("/secret"), "read");
+let err = FsError::PermissionDenied { 
+    path: PathBuf::from("/secret"),
+    operation: "read"
+};
 
-// IsDirectory
-let err = FsError::is_directory(Path::new("/folder"), "read");
+// NotAFile (for directory when file expected)
+let err = FsError::NotAFile { 
+    path: PathBuf::from("/folder") 
+};
 
-// NotDirectory
-let err = FsError::not_directory(Path::new("/file.txt"), "read_dir");
+// NotADirectory
+let err = FsError::NotADirectory { 
+    path: PathBuf::from("/file.txt") 
+};
 
 // DirectoryNotEmpty
-let err = FsError::directory_not_empty(Path::new("/folder"), "remove_dir");
+let err = FsError::DirectoryNotEmpty { 
+    path: PathBuf::from("/folder") 
+};
 
 // InvalidPath
-let err = FsError::invalid_path(
-    Path::new("/bad\0path"),
-    "contains null byte",
-    "open"
-);
+let err = FsError::InvalidPath { 
+    path: PathBuf::from("/bad\0path"),
+    reason: "contains null byte".to_string()
+};
 
 // ReadOnly
-let err = FsError::read_only(Path::new("/file.txt"), "write");
-
-// IO error
-let err = FsError::io(
-    std::io::Error::new(std::io::ErrorKind::Other, "disk full"),
-    Some(Path::new("/file.txt")),
-    "write"
-);
+let err = FsError::ReadOnly { 
+    operation: "write" 
+};
 ```
 
 ## Error Conversion
 
 ### From std::io::Error
 
+`FsError` implements `From<std::io::Error>`. Common error kinds are mapped to specific variants:
+
 ```rust
 use anyfs_backend::FsError;
 use std::io;
 
-fn from_io_error(e: io::Error, path: &Path, op: &str) -> FsError {
-    FsError::io(e, Some(path), op)
-}
-
-// Or use From trait (without path context)
+// From trait maps common kinds automatically
 let io_err = io::Error::new(io::ErrorKind::NotFound, "not found");
 let fs_err: FsError = io_err.into();
+// Results in FsError::NotFound { path: PathBuf::new() }
+
+let io_err = io::Error::new(io::ErrorKind::PermissionDenied, "denied");
+let fs_err: FsError = io_err.into();
+// Results in FsError::PermissionDenied { path: PathBuf::new(), operation: "io" }
+
+// Other errors become FsError::Io
+let io_err = io::Error::new(io::ErrorKind::Other, "disk full");
+let fs_err: FsError = io_err.into();
+// Results in FsError::Io { operation: "io", path: PathBuf::new(), source }
 ```
 
-### To std::io::Error
-
-```rust
-use anyfs_backend::FsError;
-use std::io;
-
-let fs_err = FsError::not_found(Path::new("/missing"), "read");
-let io_err: io::Error = fs_err.into();
-
-assert_eq!(io_err.kind(), io::ErrorKind::NotFound);
-```
+> **Note:** The `From` conversion uses empty paths. For better context, construct the error directly with the actual path.
 
 ## Error Display
 
 All errors implement `Display` with helpful messages:
 
 ```rust
-let err = FsError::not_found(Path::new("/file.txt"), "read");
-println!("{}", err);
-// Output: not found: /file.txt (during read)
+use anyfs_backend::FsError;
+use std::path::PathBuf;
 
-let err = FsError::permission_denied(Path::new("/secret"), "open");
+let err = FsError::NotFound { path: PathBuf::from("/file.txt") };
 println!("{}", err);
-// Output: permission denied: /secret (during open)
+// Output: not found: /file.txt
+
+let err = FsError::PermissionDenied { 
+    path: PathBuf::from("/secret"),
+    operation: "open"
+};
+println!("{}", err);
+// Output: open: permission denied: /secret
 ```
 
 ## Best Practices
 
-### 1. Always Include Operation Context
-
-```rust
-// ✓ Good - includes operation
-FsError::not_found(path, "read")
-
-// ✗ Bad - no context
-FsError::NotFound { path: path.into(), operation: String::new() }
-```
-
-### 2. Include Path When Available
+### 1. Include Path Context
 
 ```rust
 // ✓ Good - includes path
-FsError::io(e, Some(path), "write")
+FsError::NotFound { path: path.to_path_buf() }
 
-// ✗ Avoid - loses context
-FsError::io(e, None, "write")
+// ✗ Avoid - empty path loses context
+FsError::NotFound { path: PathBuf::new() }
 ```
 
-### 3. Use Specific Error Types
+### 2. Use Specific Error Types
 
 ```rust
 // ✓ Good - specific error
-if path.exists() {
-    return Err(FsError::already_exists(path, "create"));
+if is_directory {
+    return Err(FsError::NotAFile { path: path.to_path_buf() });
 }
 
-// ✗ Avoid - generic error
-return Err(FsError::other("file exists", "create"));
+// ✗ Avoid - generic error when specific exists
+return Err(FsError::Io { ... });
 ```
 
-### 4. Pattern Match for Handling
+### 3. Pattern Match for Handling
 
 ```rust
 match fs.read(path) {

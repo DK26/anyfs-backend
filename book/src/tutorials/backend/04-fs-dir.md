@@ -1,6 +1,6 @@
 # FsDir: Directory Operations
 
-`FsDir` provides directory operations: listing, creating, removing, and renaming.
+`FsDir` provides directory operations: listing, creating, and removing.
 
 ## The Trait
 
@@ -20,11 +20,10 @@ pub trait FsDir: Send + Sync {
 
     /// Remove directory and all contents recursively.
     fn remove_dir_all(&self, path: &Path) -> Result<(), FsError>;
-
-    /// Rename/move a file or directory.
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), FsError>;
 }
 ```
+
+> **Note:** `rename()` is in `FsWrite`, not `FsDir`.
 
 ## The ReadDirIter Type
 

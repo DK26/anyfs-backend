@@ -194,7 +194,7 @@ Layer 4 (POSIX):    FsFuse + FsHandles + FsLock + FsXattr = FsPosix
 | `FsDir`         | Directory operations  | `read_dir`, `create_dir`, `remove_dir_all`     | Always (core requirement)              |
 | `FsLink`        | Symbolic/hard links   | `symlink`, `hard_link`, `read_link`            | Backup tools, Unix-like behavior       |
 | `FsPermissions` | Permission management | `set_permissions`                              | File managers, security-aware apps     |
-| `FsSync`        | Force disk sync       | `sync`, `sync_path`                            | Databases, crash-safe writes           |
+| `FsSync`        | Force disk sync       | `sync`, `fsync`                                | Databases, crash-safe writes           |
 | `FsStats`       | Filesystem statistics | `statfs`                                       | Disk space monitoring, quotas          |
 | `FsInode`       | Inode ↔ path mapping  | `path_to_inode`, `inode_to_path`, `lookup`     | FUSE filesystems                       |
 | `FsHandles`     | Open file handles     | `open`, `close`, `read_at`, `write_at`         | Random access, concurrent file access  |
