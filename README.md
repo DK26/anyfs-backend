@@ -1,8 +1,11 @@
 # anyfs-backend
 
 [![CI](https://github.com/DK26/anyfs-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/DK26/anyfs-backend/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/DK26/anyfs-backend/actions/workflows/ci.yml/badge.svg?label=audit)](https://github.com/DK26/anyfs-backend/security)
 [![Crates.io](https://img.shields.io/crates/v/anyfs-backend.svg)](https://crates.io/crates/anyfs-backend)
+[![Downloads](https://img.shields.io/crates/d/anyfs-backend.svg)](https://crates.io/crates/anyfs-backend)
 [![Documentation](https://docs.rs/anyfs-backend/badge.svg)](https://docs.rs/anyfs-backend)
+[![Rust 1.68+](https://img.shields.io/badge/rust-1.68%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 
 Core traits and types for the **AnyFS pluggable virtual filesystem standard**.
